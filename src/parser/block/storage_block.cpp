@@ -4,14 +4,13 @@ StorageBlock::StorageBlock(idx_t block_id, idx_t block_offset) : block_id_(block
 }
 
 StorageBlock StorageBlock::Deserialize(field_id_t field_id, Reader& reader) {
-    assert(reader.Read<field_id_t>() == field_id);
+    auto actual_field_id = reader.Read<field_id_t>();
+    // printf("actual_field_id=%llu, expected_field_id=%llu\n", actual_field_id, field_id);
+    assert(actual_field_id == field_id);
     StorageBlock block;
     block.block_id_ = reader.ReadEncoded<idx_t>(100);
     block.block_offset_ = reader.ReadEncoded<idx_t>(101);
-    if (reader.Read<field_id_t>() != OBJECT_END) {
-        reader.Advance(8);
-        assert(reader.Read<field_id_t>() == OBJECT_END);
-    }
+    assert(reader.Read<field_id_t>() == OBJECT_END);
     return block;
 }
 

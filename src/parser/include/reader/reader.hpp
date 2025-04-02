@@ -2,135 +2,188 @@
 #include "../../common.hpp"
 #include "../decoder/decoder.hpp"
 
+#define IS_NEXT_BLOCK(offset) (((offset) % METADATA_BLOCK_SIZE) == 0)
+
 class Reader {
 public:
-    Reader(byte_t* cursor) : cursor_(cursor) {}
-    template <typename T> T Read() {
-        T* ptr = reinterpret_cast<T *>(cursor_);
-        T val = *ptr;
-        cursor_ += sizeof(T);
+    Reader(byte_t* cursor) : cursor_(cursor), offset_(0) {}
+    //
+    // normal read operations
+    //
+    //
+    template <typename T>
+    void Read(T* dest, size_t n) {
+        auto i = 0;
+        auto read_size = n * sizeof(T);
+        byte_t buffer[1024];
+        while (i < read_size) {
+            if (IS_NEXT_BLOCK(offset_)) {
+                offset_ += 8;
+            }
+            buffer[i++] = cursor_[offset_++];
+        }
+        memcpy(dest, buffer, sizeof(T) * n);
+    }
+
+    template <typename T>
+    T Read() {
+        auto i = 0;
+        byte_t buffer[sizeof(T)];
+        while (i < sizeof(T)) {
+            if (IS_NEXT_BLOCK(offset_)) {
+                offset_ += 8;
+            }
+            buffer[i++] = cursor_[offset_++];
+        }
+        T val;
+        memcpy(&val, buffer, sizeof(T));
         return val;
     }
-    template <typename T> void Read(T* dest, size_t n) {
-        T* ptr = reinterpret_cast<T *>(cursor_);
-        memcpy(dest, ptr, n * sizeof(T));
-        cursor_ += n * sizeof(T);
-    }
-    template <typename T> T Read(field_id_t field_id) {
+
+    template <typename T>
+    T Read(field_id_t field_id) {
+        uint64_t tmp_offset = offset_;
+        field_id_t actual_field_id = PeekFieldId(&tmp_offset);
         constexpr bool is_string = is_same<T, string>::value;
-        field_id_t* ptr = reinterpret_cast<field_id_t *>(cursor_);
-        field_id_t actual_field_id = *ptr;
-        if (actual_field_id != field_id) {
-            if (actual_field_id - 0xbc00 == field_id) {
-                Advance(10);
-                goto read;
-            } else if (actual_field_id == 0x2bc) {
-                Advance(10);
-                goto read;
-            }
-            // read default value
+        if (field_id != actual_field_id) {
             if constexpr (is_string) {
                 return "";
             } else {
                 return static_cast<T>(0);
             }
         }
-        cursor_ += sizeof(field_id_t);
-    read:
+        offset_ = tmp_offset;
         if constexpr (is_string) {
-            uint8_t size = *cursor_;
-            cursor_ += sizeof(uint8_t);
+            if (IS_NEXT_BLOCK(offset_)) offset_ += 8;
+            auto size = cursor_[offset_++];
             char buffer[size];
             Read<char>(buffer, size);
             string result(buffer, size);
             return result;
         } else {
-            T result = *reinterpret_cast<T *>(cursor_);
-            cursor_ += sizeof(T);
-            return result;
+            return Read<T>();
         }
-        
     }
-    template <typename T> T ReadEncoded() {
+
+    //
+    // decode + read
+    //
+    //
+    template <typename T>
+    T ReadEncoded() {
+        byte_t bytes[16] = {0};
+        Peek(bytes, 16);
         T val;
+        size_t size;
         if (is_unsigned<T>::value) {
-            val = unsigned_decode(&cursor_);
+            size = unsigned_decode(bytes, reinterpret_cast<uint64_t *>(&val));
         } else {
-            val = signed_decode(&cursor_);
+            size = signed_decode(bytes, reinterpret_cast<int64_t *>(&val));
         }
+        Advance(size);
         return val;
     }
-    template <typename T> T ReadEncoded(field_id_t field_id) {
-        field_id_t* ptr = reinterpret_cast<field_id_t *>(cursor_);
-        field_id_t actual_field_id = *ptr;
+
+    template <typename T>
+    T ReadEncoded(field_id_t field_id) {
+        // 
+        // peek the next field id
+        // 
+        // 
+        uint64_t tmp_offset = offset_;
+        field_id_t actual_field_id = PeekFieldId(&tmp_offset);
         if (actual_field_id != field_id) {
-            if (actual_field_id - 0xbc00 == field_id) {
-                Advance(10);
-                goto read_encoded;       
-            } else if (actual_field_id == 0x2bc) {
-                Advance(10);
-                goto read_encoded;
-            } else {
-                return 0;
-            }
+            return static_cast<T>(0);
         }
-        cursor_ += sizeof(field_id_t);
-    read_encoded:
+        offset_ = tmp_offset;
+
+        // 
+        // read and decode
+        //
+        //
+        byte_t bytes[16];
+        Peek(bytes, 16);
         T val;
+        size_t size;
         if (is_unsigned<T>::value) {
-            val = unsigned_decode(&cursor_);
+            size = unsigned_decode(bytes, reinterpret_cast<uint64_t *>(&val));
         } else {
-            val = signed_decode(&cursor_);
+            size = signed_decode(bytes, reinterpret_cast<int64_t *>(&val));
         }
-        ptr = reinterpret_cast<field_id_t *>(cursor_);
-        if (*ptr == 0x2bc) {
-            Advance(8);
-        }
+        Advance(size);
         return val;
     }
-    template <typename T> bool ReadEncoded(field_id_t field_id, T* val) {
-        field_id_t* ptr = reinterpret_cast<field_id_t *>(cursor_);
-        field_id_t actual_field_id = *ptr;
-        if (actual_field_id != field_id) {
-            return true;  // is default value
-        } else {
-            cursor_ += sizeof(field_id_t);
-            if (is_unsigned<T>::value) {
-                *val = unsigned_decode(&cursor_);
-            } else {
-                *val = signed_decode(&cursor_);
-            }
-            ptr = reinterpret_cast<field_id_t *>(cursor_);
-            if (*ptr == 0x2bc) {
-                Advance(8);
-            }
-            return false;  // is not default value
-        }
+
+    template <typename T>
+    bool ReadEncoded(field_id_t field_id, T* val) {
+        *val = ReadEncoded<T>(field_id);
+        return static_cast<uint64_t>(*val) == 0;
     }
-    template <typename T> T ReadEncoded(byte_t* cursor) {
-        T val;
-        if (is_unsigned<T>::value) {
-            val = unsigned_decode(&cursor);
-        } else {
-            val = signed_decode(&cursor);
-        }
-        return val;
-    }
-    template <typename T> bool TentativeRead(T expected) {
-        T* ptr = reinterpret_cast<T *>(cursor_);
-        T actual = *ptr;
-        if (actual == expected) {
-            cursor_ += sizeof(T);
-        }
-        return actual == expected;
-    }
-    template <typename T> void Unread() {
-        cursor_ -= sizeof(T);
-    }
+
     void Advance(size_t nbytes) {
-        cursor_ += nbytes;
+        auto total = 0;
+        while (total < nbytes) {
+            if (IS_NEXT_BLOCK(offset_)) {
+                offset_ += CHECKSUM_SIZE;
+            }
+            total++;
+            offset_++;
+        }
+    }
+
+    void UnalignedAdvance(size_t nbytes) {
+        offset_ += nbytes;
+    }
+
+    uint64_t CurrentPosition() {
+        return offset_;
+    }
+
+
+private:
+    byte_t* cursor_;
+    uint64_t offset_;
+
+    field_id_t PeekFieldId(uint64_t* tmp_offset) {
+        byte_t actual_field_id_buffer[sizeof(field_id_t)];
+        auto i = 0;
+        while (i < sizeof(field_id_t)) {
+            if (IS_NEXT_BLOCK(*tmp_offset)) {
+                *tmp_offset += 8;
+            }
+            actual_field_id_buffer[i++] = cursor_[(*tmp_offset)++];
+        }
+        field_id_t actual_field_id;
+        memcpy(&actual_field_id, actual_field_id_buffer, sizeof(field_id_t));
+        return actual_field_id;
+    }
+
+    void Peek(byte_t* dest, uint64_t nbytes) {
+        auto i = 0;
+        auto tmp_offset = offset_;
+        while (i < nbytes) {
+            if (IS_NEXT_BLOCK(tmp_offset)) {
+                tmp_offset += 8;
+            }
+            dest[i++] = cursor_[tmp_offset++];
+        }
+    }
+};
+
+class DataReader {
+public:
+    DataReader(byte_t* cursor) : cursor_(cursor) {}
+    template <typename T>
+    void Read(T* dest, uint64_t n) {
+        T* ptr = reinterpret_cast<T *>(cursor_);
+        memcpy(dest, ptr, sizeof(T) * n);
+    }
+    template <typename T> T Read() {
+        T* ptr = reinterpret_cast<T *>(cursor_);
+        T val = *ptr;
+        cursor_ += sizeof(T);
+        return val;
     }
 private:
     byte_t* cursor_;
-    uint64_t pos_;
 };

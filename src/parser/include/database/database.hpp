@@ -14,11 +14,15 @@ public:
     Database(const char*);
     void LoadExistingDatabase();
 private:
+    string path;
     ifstream file;
+    fsize_t file_size;
     vector<Schema*> schemas;
     vector<Table*> tables;
     MainHeader main_header;
     DatabaseHeader db_header;
+
+    uint64_t GetReadSize();
     void LoadListEntries();
     void LoadRowGroups(Table*);
     void LoadColumnData(Table*, Reader&);

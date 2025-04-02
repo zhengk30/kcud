@@ -61,17 +61,21 @@ void Table::Deserialize(Reader& reader, Table* table) {
     // read in table info
     table->type_ = (CatalogType)reader.Read<uint8_t>(100);
     table->catalog_name_ = reader.Read<string>(101);
-    table->schema_name_ = reader.Read<string>(102);
+    table->catalog_name_ = reader.Read<string>(102);
     table->temporary_ = reader.Read<bool>(103);
     table->internal_ = reader.Read<bool>(104);
     table->on_conflict_ = reader.Read<uint8_t>(105);
     table->sql_ = reader.Read<string>(106);
-
+    
     table->table_name_ = reader.Read<string>(200);
+    // printf("catalog_name=%s\nschema_name=%s\ntable_name=%s\n", table->catalog_name_.c_str(), table->catalog_name_.c_str(), table->table_name_.c_str());
     table->LoadTableColumns(201, reader);
     assert(reader.Read<field_id_t>() == OBJECT_END);
     
+    // printf("about to load table_start_...\n");
     table->table_start_ = MetadataBlock::Deserialize(101, reader);
+
+    // printf("about to load row count...\n");
     table->ReadRowCount(102, reader);
     table->ReadIndexPointers(103, reader);
 }

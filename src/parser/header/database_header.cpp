@@ -6,8 +6,8 @@ DatabaseHeader::DatabaseHeader(ifstream& file, uint8_t which) {
     // byte_t* block = new byte_t[DEFAULT_HEADER_SIZE];
     byte_t block[DEFAULT_HEADER_SIZE];
     file.read(reinterpret_cast<char *>(block), DEFAULT_HEADER_SIZE);
-    byte_t* cursor = block + CHECKSUM_SIZE;
-    Reader reader(cursor);
+    // byte_t* cursor = block + DEFAULT_HEADER_SIZE * which;
+    Reader reader(block);
     uint64_t fields[6];
     reader.Read<uint64_t>(fields, 6);
     iteration = fields[0];

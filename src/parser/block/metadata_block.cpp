@@ -23,12 +23,12 @@ MetadataBlock MetadataBlock::Deserialize(field_id_t field_id, Reader& reader) {
 }
 
 MetadataBlock MetadataBlock::Deserialize(Reader& reader) {
-    idx_t block_ptr, block_offset; 
+    idx_t block_ptr, block_offset;
     if (reader.ReadEncoded<idx_t>(100, &block_ptr)) {
         // set to default pointer
         block_ptr = static_cast<idx_t>(-1);
     }
-    
+
     reader.ReadEncoded<idx_t>(101, &block_offset);
     MetadataBlock block;
     block.block_id = (block_ptr & ~((idx_t)(0xff) << 56ull));
