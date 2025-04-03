@@ -13,19 +13,22 @@ class Database {
 public:
     Database(const char*);
     void LoadExistingDatabase();
+    string operator[](idx_t);
+    typename vector<string>::iterator begin();
+    typename vector<string>::iterator end();
 private:
-    string path;
     ifstream file;
     fsize_t file_size;
     vector<Schema*> schemas;
     vector<Table*> tables;
     MainHeader main_header;
     DatabaseHeader db_header;
-
+    vector<string> data;
+    
     uint64_t GetReadSize();
     void LoadListEntries();
     void LoadRowGroups(Table*);
-    void LoadColumnData(Table*, Reader&);
-    void LoadColumnDataPointer(MetadataBlock&, vector<string>&);
-    void LoadData(uint64_t, uint64_t, StorageBlock&, vector<string>&);
+    void LoadColumnData(Table*);
+    void LoadColumnDataPointer(MetadataBlock&);
+    void LoadData(uint64_t, uint64_t, StorageBlock&);
 };

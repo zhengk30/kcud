@@ -13,7 +13,7 @@ public:
     //
     template <typename T>
     void Read(T* dest, size_t n) {
-        auto i = 0;
+        uint64_t i = 0;
         auto read_size = n * sizeof(T);
         byte_t buffer[1024];
         while (i < read_size) {
@@ -27,7 +27,7 @@ public:
 
     template <typename T>
     T Read() {
-        auto i = 0;
+        uint64_t i = 0;
         byte_t buffer[sizeof(T)];
         while (i < sizeof(T)) {
             if (IS_NEXT_BLOCK(offset_)) {
@@ -121,7 +121,7 @@ public:
     }
 
     void Advance(size_t nbytes) {
-        auto total = 0;
+        uint64_t total = 0;
         while (total < nbytes) {
             if (IS_NEXT_BLOCK(offset_)) {
                 offset_ += CHECKSUM_SIZE;
@@ -146,7 +146,7 @@ private:
 
     field_id_t PeekFieldId(uint64_t* tmp_offset) {
         byte_t actual_field_id_buffer[sizeof(field_id_t)];
-        auto i = 0;
+        uint64_t i = 0;
         while (i < sizeof(field_id_t)) {
             if (IS_NEXT_BLOCK(*tmp_offset)) {
                 *tmp_offset += 8;
@@ -159,7 +159,7 @@ private:
     }
 
     void Peek(byte_t* dest, uint64_t nbytes) {
-        auto i = 0;
+        uint64_t i = 0;
         auto tmp_offset = offset_;
         while (i < nbytes) {
             if (IS_NEXT_BLOCK(tmp_offset)) {
@@ -177,6 +177,7 @@ public:
     void Read(T* dest, uint64_t n) {
         T* ptr = reinterpret_cast<T *>(cursor_);
         memcpy(dest, ptr, sizeof(T) * n);
+        cursor_ += sizeof(T) * n;
     }
     template <typename T> T Read() {
         T* ptr = reinterpret_cast<T *>(cursor_);

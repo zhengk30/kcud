@@ -1,5 +1,4 @@
 #include "../include/database/database.hpp"
-#include <filesystem>
 
 Database::Database(const char* filepath) {
     assert((file = ifstream(filepath, ifstream::binary)));
@@ -8,8 +7,8 @@ Database::Database(const char* filepath) {
 }
 
 uint64_t Database::GetReadSize() {
-    auto read_size = DEFAULT_BLOCK_SIZE;
-    auto remaining_size = file_size - file.tellg();
+    uint64_t read_size = DEFAULT_BLOCK_SIZE;
+    uint64_t remaining_size = file_size - file.tellg();
     return read_size > remaining_size ? remaining_size : read_size;
 }
 
@@ -33,7 +32,20 @@ void Database::LoadExistingDatabase() {
     file.close();
 }
 
-void Database::LoadListEntries() {
+string Database::operator[](idx_t i) {
+    return data[i];
+}
+
+typename vector<string>::iterator Database::begin() {
+    return data.begin();
+}
+
+typename vector<string>::iterator Database::end() {
+    return data.end();
+}
+
+void Database::LoadListEntries()
+{
     // printf("===== LoadListEntries =====\n");
     idx_t metablock_id = db_header.GetMetaBlockId();
     idx_t metablock_index = db_header.GetMetaBlockIndex();
@@ -81,7 +93,7 @@ void Database::LoadRowGroups(Table* table) {
     table->SetRowGroupCount(n_row_groups);
 
     // now load the actual row groups
-    for (auto i = 0; i < n_row_groups; i++) {
+    for (uint64_t i = 0; i < n_row_groups; i++) {
         // printf("===== row group %llu =====\n", i);
         auto row_start = reader.ReadEncoded<uint64_t>(100);
         auto tuple_count = reader.ReadEncoded<uint64_t>(101);
@@ -95,26 +107,25 @@ void Database::LoadRowGroups(Table* table) {
         assert(val == OBJECT_END);
         table->AddRowGroup(row_group);
     }
-    LoadColumnData(table, reader);
+    LoadColumnData(table);
 }
 
-void Database::LoadColumnData(Table* table, Reader& reader) {
-    auto n_row_groups = table->GetRowGroupCount();
+void Database::LoadColumnData(Table* table) {
+    uint64_t n_row_groups = table->GetRowGroupCount();
     // printf("[Database::LoadColumnData] n_row_groups=%llu\n", n_row_groups);
-    vector<string> data;
-    for (auto i = 0; i < n_row_groups; i++) {
+    // vector<string> data;
+    for (uint64_t i = 0; i < n_row_groups; i++) {
         RowGroup* row_group = table->GetRowGroup(i);
         auto n_data_pointers = row_group->GetDataPointerCount();
-        for (auto j = 0; j < n_data_pointers; j++) {
+        for (uint64_t j = 0; j < n_data_pointers; j++) {
             MetadataBlock data_block = row_group->GetMetaBlock(j);
-            LoadColumnDataPointer(data_block, data);
+            LoadColumnDataPointer(data_block);
         }
     }
-    // printf("data.size=%llu\n", data.size());
+    printf("data.size=%llu\n", data.size());
 }
 
-void Database::LoadColumnDataPointer(MetadataBlock& meta_block, vector<string>& data){
-    // printf("========== LoadColumnDataPointer =======\n");
+void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
     idx_t block_id = meta_block.GetBlockId();
     idx_t block_index = meta_block.GetBlockIndex();
     idx_t block_offset = meta_block.GetBlockOffset();
@@ -122,50 +133,45 @@ void Database::LoadColumnDataPointer(MetadataBlock& meta_block, vector<string>& 
     file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE, ios::beg);
     file.read(reinterpret_cast<char *>(block), GetReadSize());
     
-    // printf("load column data pointer: offset=%llu\n", DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE + METADATA_BLOCK_SIZE * block_index + block_offset);
-    // byte_t* cursor = block + METADATA_BLOCK_SIZE * block_index + block_offset;
     Reader reader(block);
     reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index + block_offset);
 
     auto n_data_pointers = reader.ReadEncoded<uint64_t>(100);
-    // printf("[Database::LoadColumnDataPointer] n_data_pointers=%llu\n", n_data_pointers);
-    for (auto i = 0; i < n_data_pointers; i++) {
-        // printf("========== i = %llu =========\n", i);
+    for (uint64_t i = 0; i < n_data_pointers; i++) {
         auto row_start = reader.ReadEncoded<uint64_t>(100);
         auto tuple_count = reader.ReadEncoded<uint64_t>(101);
         auto data_block = StorageBlock::Deserialize(102, reader);
         auto compression = CompressionType::Deserialize(103, reader);
+        (void)compression;
         BaseStatistics::Deserialize(104, reader);
         assert(reader.Read<field_id_t>() == OBJECT_END);
-        // printf("row_start=%llu, tuple_count=%llu, block_id=%llu, block_offset=%llu\n",
+        // printf("row_start=%llu, tuple_count=%llu, block_id=%llu, offset=%llu\n",
         //         row_start, tuple_count, data_block.GetBlockId(), data_block.GetBlockOffset());
-        LoadData(row_start, tuple_count, data_block, data);
+        LoadData(row_start, tuple_count, data_block);
     }
 }
 
-void Database::LoadData(uint64_t row_start, uint64_t tuple_count, StorageBlock& block_pointer, vector<string>& rows) {
+void Database::LoadData([[maybe_unused]] uint64_t row_start, uint64_t tuple_count, StorageBlock& block_pointer) {
     uint64_t block_id = block_pointer.GetBlockId();
     uint64_t block_offset = block_pointer.GetBlockOffset();
     uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
-    // byte_t* block = new byte_t[DEFAULT_BLOCK_SIZE];
     byte_t block[DEFAULT_BLOCK_SIZE];
     file.seekg(block_start, ios::beg);
     file.read(reinterpret_cast<char *>(block), GetReadSize());
-
 
     byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
     DataReader offset_reader(cursor);
     uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
     uint32_t offset_array[tuple_count];
-    // printf("about to read offsets...\n");
     offset_reader.Read<uint32_t>(offset_array, tuple_count);
-
     uint32_t total_length = offset_array[tuple_count-1];
-    // printf("about to compute string offsets...\n");
-    byte_t* strings_start = block + dict_end_offset - total_length;
+
+    byte_t* strings_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
+    // for (int i = 0; i < 16; i++) {
+    //     printf("%c", (char)strings_start[i]);
+    // }
     DataReader string_reader(strings_start);
 
-    // printf("about to read strings...\n");
     for (int64_t i = tuple_count-1; i >= 0; i--) {
         uint32_t length = offset_array[i];
         if (i > 0) {
@@ -173,8 +179,6 @@ void Database::LoadData(uint64_t row_start, uint64_t tuple_count, StorageBlock& 
         }
         char row[length];
         string_reader.Read<char>(row, length);
-        rows.push_back(string(row));
+        data.push_back(string(row, length));
     }
-    
-    // delete [] block;
 }

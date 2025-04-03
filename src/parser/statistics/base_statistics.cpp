@@ -3,9 +3,9 @@
 
 void BaseStatistics::Deserialize(field_id_t field_id, Reader& reader) {
     assert(reader.Read<field_id_t>() == field_id);
-    auto has_null = reader.Read<bool>(100);  // has_null
-	auto has_no_null = reader.Read<bool>(101);  // has_no_null
-	auto distinct_count = reader.ReadEncoded<idx_t>(102);  // distinct_count
+    (void)reader.Read<bool>(100);  // has_null
+	(void)reader.Read<bool>(101);  // has_no_null
+	(void)reader.ReadEncoded<idx_t>(102);  // distinct_count
 
     assert(reader.Read<field_id_t>() == 103);  // about to read string stats
 

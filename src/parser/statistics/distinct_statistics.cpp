@@ -30,7 +30,7 @@ void DistinctStatistics::Deserialize(field_id_t field_id, Reader& reader) {
             assert(reader.Read<uint8_t>() == 1);
             // block reservior sample
             val = reader.Read<field_id_t>();
-            printf("val=%llu\n", val);
+            // printf("val=%llu\n", val);
             if (val == 100) {
                 (void)reader.Read<idx_t>();
                 (void)reader.Read<idx_t>(101);
