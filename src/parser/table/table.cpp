@@ -34,6 +34,10 @@ idx_t Table::GetTableStartBlockOffset() {
     return table_start_.GetBlockOffset();
 }
 
+uint64_t Table::GetRowCount() {
+    return nrows_;
+}
+
 void Table::SetRowGroupCount(uint64_t count) {
     row_group_count_ = count;
 }
