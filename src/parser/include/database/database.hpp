@@ -16,6 +16,7 @@ public:
     string operator[](idx_t);
     typename vector<string>::iterator begin();
     typename vector<string>::iterator end();
+    uint64_t GetRowCount();
 private:
     ifstream file;
     fsize_t file_size;

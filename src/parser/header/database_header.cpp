@@ -42,6 +42,14 @@ void DatabaseHeader::Print() {
               << "\nvector size: " << vector_size << '\n';
 }
 
+idx_t DatabaseHeader::GetFreeListBlockId() {
+    return (free_list & ~((idx_t)(0xff) << 56ull));
+}
+
+idx_t DatabaseHeader::GetFreeListBlockIndex() {
+    return free_list >> 56ull;
+}
+
 idx_t DatabaseHeader::GetMetaBlockId() {
     return (meta_block & ~((idx_t)(0xff) << 56ull));
 }

@@ -3,36 +3,55 @@
 Database::Database(const char* filepath) {
     assert((file = ifstream(filepath, ifstream::binary)));
     file_size = filesystem::file_size(filesystem::path(filepath));
-    // printf("file_size=%llu\n", file_size);
-}
-
-uint64_t Database::GetReadSize() {
-    uint64_t read_size = DEFAULT_BLOCK_SIZE;
-    uint64_t remaining_size = file_size - file.tellg();
-    return read_size > remaining_size ? remaining_size : read_size;
 }
 
 void Database::LoadExistingDatabase() {
+    std::chrono::duration<double> list_entries_info_elapsed;
+    std::chrono::duration<double> row_group_elapsed;
+    std::chrono::duration<double> data_elapsed;
+
+    //
+    // load metadata about each schema and table
+    //
+    //
     auto start = chrono::high_resolution_clock::now();
-    // set headers
     main_header = MainHeader(file);
     DatabaseHeader db_header_1(file, 1);
     DatabaseHeader db_header_2(file, 2);
     db_header = (db_header_1 > db_header_2) ? db_header_1 : db_header_2;
-    // main_header.Print();
-    // db_header.Print();
     LoadListEntries();
+    auto end = chrono::high_resolution_clock::now();
+    list_entries_info_elapsed = end - start;
 
+    //
+    // load metadata for row groups
+    //
+    //
+    start = chrono::high_resolution_clock::now();
     for (auto& table : tables) {
         LoadRowGroups(table);
     }
-    auto end = chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Elapsed time: " << elapsed.count() << " sec\n";
+    end = chrono::high_resolution_clock::now();
+    row_group_elapsed = end - start;
+
+    //
+    // now load the actual rows
+    //
+    //
+    start = chrono::high_resolution_clock::now();
+    for (auto& table : tables) {
+        LoadColumnData(table);
+    }
+    end = chrono::high_resolution_clock::now();
+    data_elapsed = end - start;
+    std::cout << "list entries metadata load time: " << list_entries_info_elapsed.count() << " sec\n"
+              << "row groups load time: " << row_group_elapsed.count() << " sec\n"
+              << "data load time: " << data_elapsed.count() << " sec\n";
     file.close();
 }
 
 string Database::operator[](idx_t i) {
+    assert(i < data.size());
     return data[i];
 }
 
@@ -44,18 +63,20 @@ typename vector<string>::iterator Database::end() {
     return data.end();
 }
 
-void Database::LoadListEntries()
-{
-    // printf("===== LoadListEntries =====\n");
+uint64_t Database::GetRowCount() {
+    return data.size();
+}
+
+void Database::LoadListEntries() {
     idx_t metablock_id = db_header.GetMetaBlockId();
     idx_t metablock_index = db_header.GetMetaBlockIndex();
     byte_t block[DEFAULT_BLOCK_SIZE];
 
     file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GetReadSize());
+    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
     byte_t* cursor = block + CHECKSUM_SIZE + METADATA_BLOCK_SIZE * metablock_index;
     Reader reader(cursor);
-    // read metadata about schemas and tables of this database
+    
     uint8_t size = reader.Read<uint8_t>(100);
     for (auto i = 0; i < size; i++) {
         uint8_t type = reader.Read<uint8_t>(99);
@@ -80,16 +101,17 @@ void Database::LoadRowGroups(Table* table) {
     idx_t block_offset = table->GetTableStartBlockOffset();
 
     file.seekg(HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GetReadSize());
+    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
 
     Reader reader(block);
     reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index + block_offset);
     assert(reader.ReadEncoded<uint64_t>(100) == 1);
     (void)reader.Read<uint8_t>();
     BaseStatistics::Deserialize(100, reader);
+    assert(reader.Read<field_id_t>() == OBJECT_END);  // string stats end
+    assert(reader.Read<field_id_t>() == OBJECT_END);  // base stats end
     DistinctStatistics::Deserialize(101, reader);
     uint64_t n_row_groups = reader.Read<uint64_t>();
-    // printf("n_row_groups=%llu\n", n_row_groups);
     table->SetRowGroupCount(n_row_groups);
 
     // now load the actual row groups
@@ -106,14 +128,12 @@ void Database::LoadRowGroups(Table* table) {
         auto val = reader.Read<field_id_t>();
         assert(val == OBJECT_END);
         table->AddRowGroup(row_group);
+        // printf("=== row group %llu done ===\n", i);
     }
-    LoadColumnData(table);
 }
 
 void Database::LoadColumnData(Table* table) {
     uint64_t n_row_groups = table->GetRowGroupCount();
-    // printf("[Database::LoadColumnData] n_row_groups=%llu\n", n_row_groups);
-    // vector<string> data;
     for (uint64_t i = 0; i < n_row_groups; i++) {
         RowGroup* row_group = table->GetRowGroup(i);
         auto n_data_pointers = row_group->GetDataPointerCount();
@@ -122,7 +142,7 @@ void Database::LoadColumnData(Table* table) {
             LoadColumnDataPointer(data_block);
         }
     }
-    printf("data.size=%llu\n", data.size());
+    assert(data.size() == table->GetRowCount());
 }
 
 void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
@@ -131,10 +151,13 @@ void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
     idx_t block_offset = meta_block.GetBlockOffset();
     byte_t block[DEFAULT_BLOCK_SIZE];
     file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GetReadSize());
-    
+    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
+    // auto offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE +METADATA_BLOCK_SIZE * block_index;
     Reader reader(block);
-    reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index + block_offset);
+    
+    reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index);
+    idx_t next_metablock_ptr = reader.ReadMetaBlockPtr();
+    reader.UnalignedAdvance(block_offset);
 
     auto n_data_pointers = reader.ReadEncoded<uint64_t>(100);
     for (uint64_t i = 0; i < n_data_pointers; i++) {
@@ -144,6 +167,20 @@ void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
         auto compression = CompressionType::Deserialize(103, reader);
         (void)compression;
         BaseStatistics::Deserialize(104, reader);
+        if (reader.Read<field_id_t>() != OBJECT_END) {
+            assert(next_metablock_ptr != 0xffffffff);
+            auto next = MetadataBlock(next_metablock_ptr, 0);
+            auto next_id = next.GetBlockId();
+            auto next_index = next.GetBlockIndex();
+            // printf("next_id=%llu, next_index=%llu\n", next_id, next_index);
+            reader.Reassign(file, file_size, next_id, next_index);
+            reader.UnalignedAdvance(METADATA_BLOCK_SIZE * next_index);
+            next_metablock_ptr = reader.ReadMetaBlockPtr();
+            reader.UnalignedAdvance(POINTER_SIZE);
+            auto val = reader.Read<field_id_t>();
+            assert(val == OBJECT_END);    
+        }
+        assert(reader.Read<field_id_t>() == OBJECT_END);  // base stats end
         assert(reader.Read<field_id_t>() == OBJECT_END);
         // printf("row_start=%llu, tuple_count=%llu, block_id=%llu, offset=%llu\n",
         //         row_start, tuple_count, data_block.GetBlockId(), data_block.GetBlockOffset());
@@ -157,7 +194,7 @@ void Database::LoadData([[maybe_unused]] uint64_t row_start, uint64_t tuple_coun
     uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
     byte_t block[DEFAULT_BLOCK_SIZE];
     file.seekg(block_start, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GetReadSize());
+    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
 
     byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
     DataReader offset_reader(cursor);
@@ -167,9 +204,6 @@ void Database::LoadData([[maybe_unused]] uint64_t row_start, uint64_t tuple_coun
     uint32_t total_length = offset_array[tuple_count-1];
 
     byte_t* strings_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
-    // for (int i = 0; i < 16; i++) {
-    //     printf("%c", (char)strings_start[i]);
-    // }
     DataReader string_reader(strings_start);
 
     for (int64_t i = tuple_count-1; i >= 0; i--) {

@@ -8,6 +8,8 @@ public:
     DatabaseHeader(ifstream&, uint8_t);
     idx_t GetMetaBlockId();
     idx_t GetMetaBlockIndex();
+    idx_t GetFreeListBlockId();
+    idx_t GetFreeListBlockIndex();
     void operator=(const DatabaseHeader&);
     bool operator>(const DatabaseHeader&);
     void Print();

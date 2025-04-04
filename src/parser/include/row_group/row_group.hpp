@@ -9,7 +9,7 @@ public:
     uint64_t GetDataPointerCount();
     MetadataBlock GetMetaBlock(idx_t i);
 private:
-    uint64_t row_start_;
-    uint64_t tuple_count_;
+    [[maybe_unused]] uint64_t row_start_;
+    [[maybe_unused]] uint64_t tuple_count_;
     vector<MetadataBlock> data_blocks_;
 };

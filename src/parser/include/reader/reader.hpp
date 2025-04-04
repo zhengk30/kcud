@@ -11,6 +11,14 @@ public:
     // normal read operations
     //
     //
+    void Reassign(ifstream& file, uint64_t file_size, idx_t next_id, idx_t next_index) {
+        auto fileoff = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * next_id + CHECKSUM_SIZE;
+        file.seekg(fileoff, ios::beg);
+        file.read(reinterpret_cast<char *>(cursor_), GET_READ_SIZE(file, file_size));
+        cursor_ += METADATA_BLOCK_SIZE * next_index;
+        offset_ = 0;
+    }
+
     template <typename T>
     void Read(T* dest, size_t n) {
         uint64_t i = 0;
@@ -120,6 +128,16 @@ public:
         return static_cast<uint64_t>(*val) == 0;
     }
 
+    idx_t ReadMetaBlockPtr() {
+        assert(IS_NEXT_BLOCK(offset_));
+        //
+        // DON'T ADVANCE!
+        //
+        //
+        idx_t* ptr = reinterpret_cast<idx_t *>(cursor_ + offset_);
+        return *ptr;
+    }
+
     void Advance(size_t nbytes) {
         uint64_t total = 0;
         while (total < nbytes) {
@@ -133,6 +151,10 @@ public:
 
     void UnalignedAdvance(size_t nbytes) {
         offset_ += nbytes;
+        // for (auto i = offset_; i < offset_ + 16; i++) {
+        //     printf("%02x ", (uint8_t)cursor_[i]);
+        // }
+        // printf("\n");
     }
 
     uint64_t CurrentPosition() {

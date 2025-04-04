@@ -14,6 +14,4 @@ void BaseStatistics::Deserialize(field_id_t field_id, Reader& reader) {
 	(void)reader.Read<bool>(202);
 	(void)reader.Read<bool>(203);
 	(void)reader.ReadEncoded<uint64_t>(204);
-    assert(reader.Read<field_id_t>() == OBJECT_END);  // string stats end
-    assert(reader.Read<field_id_t>() == OBJECT_END);  // base stats end
 }

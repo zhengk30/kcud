@@ -23,6 +23,7 @@ public:
     idx_t GetTableStartBlockId();
     idx_t GetTableStartBlockIndex();
     idx_t GetTableStartBlockOffset();
+    uint64_t GetRowCount();
     void SetRowGroupCount(uint64_t);
     void AddRowGroup(RowGroup*);
     uint64_t GetRowGroupCount();

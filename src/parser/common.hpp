@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <vector>
+#include <numeric>
 #include <fstream>
 #include <iostream>
 #include <type_traits>
@@ -29,3 +30,14 @@ typedef uint16_t field_id_t;
 #define DEFAULT_DICTIONARY_HEADER_SIZE (sizeof(uint32_t) + sizeof(uint32_t))
 #define DEFAULT_VECTOR_SIZE (2048)
 #define STRING_MAX_LENGTH (4294967295U)
+
+#define GET_READ_SIZE(file, file_size) \
+    ({ \
+        uint64_t _read_size; \
+        do { \
+            uint64_t _default_size = DEFAULT_BLOCK_SIZE; \
+            uint64_t _remaining = (file_size) - (file).tellg(); \
+            _read_size = (_default_size > _remaining ? _remaining : _default_size); \
+        } while(0); \
+        _read_size; \
+    })
