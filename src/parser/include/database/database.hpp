@@ -9,27 +9,24 @@
 #include "../table/table.hpp"
 #include "../type_info/type_info.hpp"
 
+
 class Database {
 public:
     Database(const char*);
     void LoadExistingDatabase();
-    string operator[](idx_t);
-    typename vector<string>::iterator begin();
-    typename vector<string>::iterator end();
-    uint64_t GetRowCount();
+    void ScanTable(Table*);
+    Table* GetTable(idx_t);
 private:
     ifstream file;
+    const char* file_path;
     fsize_t file_size;
     vector<Schema*> schemas;
     vector<Table*> tables;
     MainHeader main_header;
     DatabaseHeader db_header;
-    vector<string> data;
-    
-    uint64_t GetReadSize();
+
     void LoadListEntries();
     void LoadRowGroups(Table*);
-    void LoadColumnData(Table*);
-    void LoadColumnDataPointer(MetadataBlock&);
-    void LoadData(uint64_t, uint64_t, StorageBlock&);
+    void LoadColumnDataPointers(Table*);
+    void LoadColumnDataPointersUtil(Table*, MetadataBlock&);
 };

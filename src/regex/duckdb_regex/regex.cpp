@@ -1,6 +1,6 @@
 #include "regex.hpp"
 
-bool like(const char *sdata, uint64_t slen, const char *pdata, uint64_t plen) {
+bool like(const char* sdata, uint64_t slen, const char* pdata, uint64_t plen) {
 	uint64_t pidx = 0;
 	uint64_t sidx = 0;
 	for (; pidx < plen && sidx < slen; pidx++) {

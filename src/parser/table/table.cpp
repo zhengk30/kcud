@@ -1,5 +1,36 @@
 #include "../include/table/table.hpp"
 
+//
+// ColumnDataPointer class methods
+//
+//
+ColumnDataPointer::ColumnDataPointer(uint64_t row_start, uint64_t tuple_count, StorageBlock& other) {
+    row_start_ = row_start;
+    tuple_count_ = tuple_count;
+    pointer_ = other;
+}
+
+uint64_t ColumnDataPointer::GetRowStart() {
+    return row_start_;
+}
+
+uint64_t ColumnDataPointer::GetTupleCount() {
+    return tuple_count_;
+}
+
+uint64_t ColumnDataPointer::GetBlockId() {
+    return pointer_.GetBlockId();
+}
+
+uint64_t ColumnDataPointer::GetBlockOffset() {
+    return pointer_.GetBlockOffset();
+}
+
+string Table::GetString(idx_t i) {
+    assert(i < data.size());
+    return data[i];
+}
+
 Table::Table(CatalogType type, string catalog, string schema, uint8_t on_conflict,
             bool temporary, bool internal, string sql, string table, uint8_t ncols,
             uint64_t nrows, uint64_t row_group_count) :
@@ -9,6 +40,53 @@ Table::Table(CatalogType type, string catalog, string schema, uint8_t on_conflic
 }
 
 ColumnInfo::ColumnInfo() {}
+
+void Table::LoadData(const char* path) {
+    auto start = chrono::high_resolution_clock::now();
+    uint64_t count = 0;
+    ifstream file(path, ios::binary);
+    auto file_size = filesystem::file_size(filesystem::path(path));
+    byte_t block[DEFAULT_BLOCK_SIZE];
+    for (auto& pointer : data_pointers_) {
+        uint64_t block_id = pointer.GetBlockId();
+        uint64_t block_offset = pointer.GetBlockOffset();
+        uint64_t tuple_count = pointer.GetTupleCount();
+        uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
+        file.seekg(block_start, ios::beg);
+        auto read_size = GET_READ_SIZE(file, file_size);
+        file.read(reinterpret_cast<char *>(block), read_size);
+
+        byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
+        DataReader offset_reader(cursor);
+        uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
+        uint32_t offset_array[tuple_count];
+        offset_reader.Read<uint32_t>(offset_array, tuple_count);
+        // printf("offset_vector.size()=%llu\n", offset_vector.size());
+        uint32_t total_length = offset_array[tuple_count-1];
+
+        byte_t* string_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
+        // string new_chars(reinterpret_cast<char *>(bytes));
+        // characters += new_chars;
+
+        DataReader string_reader(string_start);
+        for (uint64_t i = 0; i < tuple_count; i++) {
+            auto j = tuple_count - 1 - i;
+            auto length = offset_array[j];
+            if (j > 0) {
+                length -= offset_array[j-1];
+            }
+            // std::cout << length << '\n';
+            char row[length];
+            string_reader.Read<char>(row, length);
+            data.push_back(string(row, length));
+        }
+    
+    }
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end - start;
+    // cout << "count: " << data.size() <<  ", elapsed: " << elapsed.count() << '\n';
+    file.close();
+}
 
 void Table::LoadTableColumns(field_id_t field_id, Reader& reader) {
     assert(reader.Read<field_id_t>() == field_id);
@@ -88,6 +166,10 @@ void Table::AddRowGroup(RowGroup* row_group) {
     row_groups_.push_back(row_group);
 }
 
+void Table::AddColumnDataPointer(uint64_t row_start, uint64_t tuple_count, StorageBlock block) {
+    data_pointers_.push_back(ColumnDataPointer(row_start, tuple_count, block));
+}
+
 uint64_t Table::GetRowGroupCount() {
     return row_group_count_;
 }
@@ -96,3 +178,51 @@ RowGroup* Table::GetRowGroup(idx_t i) {
     assert(i < row_group_count_);
     return row_groups_[i];
 }
+
+// void Table::ParseData(byte_t* block, uint64_t read_size, uint64_t tuple_count, uint64_t block_offset) {
+//     byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
+//     DataReader offset_reader(cursor);
+//     uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
+//     uint32_t offset_array[tuple_count];
+//     offset_reader.Read<uint32_t>(offset_array, tuple_count);
+//     vector<uint32_t> offset_vector(
+//         offset_array, offset_array+sizeof(offset_array)/sizeof(offset_array[0])
+//     );
+//     // printf("offset_vector.size()=%llu\n", offset_vector.size());
+//     uint32_t total_length = offset_array[tuple_count-1];
+
+//     byte_t* string_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
+//     // string new_chars(reinterpret_cast<char *>(bytes));
+//     // characters += new_chars;
+
+//     DataReader string_reader(string_start);
+//     auto cons = end + start - 1;
+//     for (uint64_t i = 0; i < tuple_count; i++) {
+//         auto j = cons - i;
+//         auto length = offset_array[j];
+//         if (j > 0) {
+//             length -= offset_array[j-1];
+//         }
+//         char row[length];
+//         string_reader.Read<char>(row, length);
+//         // TODO: store the string while minimizing contention
+        
+//     }
+    
+//     // uint64_t nrows_per_thread = tuple_count / NTHREADS;
+//     // vector<thread> threads;
+//     // for (uint8_t i = 0; i < NTHREADS; i++) {
+//     //     uint64_t start = i * nrows_per_thread;
+//     //     uint64_t end = (i == NTHREADS - 1) ? tuple_count : (i + 1) * nrows_per_thread;
+//     //     threads.emplace_back(
+//     //         parse_data_worker, ref(string_reader), start, end, ref(offset_vector)
+//     //     );
+//     // }
+//     // for (auto& t : threads) {
+//     //     t.join();
+//     // }
+    
+//     // parse_data_worker(string_reader, 0, tuple_count, offset_vector);
+
+    
+// }

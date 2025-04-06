@@ -1,14 +1,19 @@
 #include "../include/database/database.hpp"
 
+//
+// Database class methods
+//
+//
 Database::Database(const char* filepath) {
     assert((file = ifstream(filepath, ifstream::binary)));
     file_size = filesystem::file_size(filesystem::path(filepath));
+    file_path = filepath;
 }
 
 void Database::LoadExistingDatabase() {
     std::chrono::duration<double> list_entries_info_elapsed;
     std::chrono::duration<double> row_group_elapsed;
-    std::chrono::duration<double> data_elapsed;
+    std::chrono::duration<double> data_pointer_elapsed;
 
     //
     // load metadata about each schema and table
@@ -35,36 +40,38 @@ void Database::LoadExistingDatabase() {
     row_group_elapsed = end - start;
 
     //
-    // now load the actual rows
+    // load pointers to actual data
     //
     //
     start = chrono::high_resolution_clock::now();
     for (auto& table : tables) {
-        LoadColumnData(table);
+        LoadColumnDataPointers(table);
     }
     end = chrono::high_resolution_clock::now();
-    data_elapsed = end - start;
-    std::cout << "list entries metadata load time: " << list_entries_info_elapsed.count() << " sec\n"
-              << "row groups load time: " << row_group_elapsed.count() << " sec\n"
-              << "data load time: " << data_elapsed.count() << " sec\n";
+    data_pointer_elapsed = end - start;
+    
     file.close();
+    // std::cout << "list entries metadata load time: " << list_entries_info_elapsed.count() << " sec\n"
+    //           << "row groups load time: " << row_group_elapsed.count() << " sec\n"
+    //           << "data pointers load time: " << data_pointer_elapsed.count() << " sec\n"
+    //           << "data load time: " << data_elapsed.count() << " sec\n";
+    // file.close();
 }
 
-string Database::operator[](idx_t i) {
-    assert(i < data.size());
-    return data[i];
+Table* Database::GetTable(idx_t i) {
+    assert(i < tables.size());
+    return tables[i];
 }
 
-typename vector<string>::iterator Database::begin() {
-    return data.begin();
-}
-
-typename vector<string>::iterator Database::end() {
-    return data.end();
-}
-
-uint64_t Database::GetRowCount() {
-    return data.size();
+void Database::ScanTable(Table* table) {
+    table->LoadData(file_path);
+    // auto start = chrono::high_resolution_clock::now();
+    // for (auto& pointer : data_pointers) {
+    //     LoadData(pointer);
+    // }
+    // auto end = chrono::high_resolution_clock::now();
+    // chrono::duration<double> elapsed = end - start;
+    // std::cout << "table scan: " << elapsed.count() << " sec\n";
 }
 
 void Database::LoadListEntries() {
@@ -132,20 +139,22 @@ void Database::LoadRowGroups(Table* table) {
     }
 }
 
-void Database::LoadColumnData(Table* table) {
+void Database::LoadColumnDataPointers(Table* table) {
     uint64_t n_row_groups = table->GetRowGroupCount();
     for (uint64_t i = 0; i < n_row_groups; i++) {
         RowGroup* row_group = table->GetRowGroup(i);
         auto n_data_pointers = row_group->GetDataPointerCount();
         for (uint64_t j = 0; j < n_data_pointers; j++) {
             MetadataBlock data_block = row_group->GetMetaBlock(j);
-            LoadColumnDataPointer(data_block);
+            LoadColumnDataPointersUtil(table, data_block);
         }
     }
-    assert(data.size() == table->GetRowCount());
+    // printf("data_pointers.size()=%llu\n", data_pointers.size());
+    // assert(data.size() == table->GetRowCount());
 }
 
-void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
+void Database::LoadColumnDataPointersUtil(Table* table, MetadataBlock& meta_block){
+    auto start_time = chrono::high_resolution_clock::now();
     idx_t block_id = meta_block.GetBlockId();
     idx_t block_index = meta_block.GetBlockIndex();
     idx_t block_offset = meta_block.GetBlockOffset();
@@ -168,7 +177,7 @@ void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
         (void)compression;
         BaseStatistics::Deserialize(104, reader);
         if (reader.Read<field_id_t>() != OBJECT_END) {
-            assert(next_metablock_ptr != 0xffffffff);
+            assert(next_metablock_ptr != INVALID_POINTER);
             auto next = MetadataBlock(next_metablock_ptr, 0);
             auto next_id = next.GetBlockId();
             auto next_index = next.GetBlockIndex();
@@ -184,35 +193,10 @@ void Database::LoadColumnDataPointer(MetadataBlock& meta_block){
         assert(reader.Read<field_id_t>() == OBJECT_END);
         // printf("row_start=%llu, tuple_count=%llu, block_id=%llu, offset=%llu\n",
         //         row_start, tuple_count, data_block.GetBlockId(), data_block.GetBlockOffset());
-        LoadData(row_start, tuple_count, data_block);
+        // ColumnDataPointer data_pointer(row_start, tuple_count, data_block);
+        table->AddColumnDataPointer(row_start, tuple_count, data_block);
     }
-}
-
-void Database::LoadData([[maybe_unused]] uint64_t row_start, uint64_t tuple_count, StorageBlock& block_pointer) {
-    uint64_t block_id = block_pointer.GetBlockId();
-    uint64_t block_offset = block_pointer.GetBlockOffset();
-    uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
-    byte_t block[DEFAULT_BLOCK_SIZE];
-    file.seekg(block_start, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
-
-    byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
-    DataReader offset_reader(cursor);
-    uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
-    uint32_t offset_array[tuple_count];
-    offset_reader.Read<uint32_t>(offset_array, tuple_count);
-    uint32_t total_length = offset_array[tuple_count-1];
-
-    byte_t* strings_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
-    DataReader string_reader(strings_start);
-
-    for (int64_t i = tuple_count-1; i >= 0; i--) {
-        uint32_t length = offset_array[i];
-        if (i > 0) {
-            length -= offset_array[i-1];
-        }
-        char row[length];
-        string_reader.Read<char>(row, length);
-        data.push_back(string(row, length));
-    }
+    auto end_time = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end_time - start_time;
+    // cout << "[LoadColumnDataPointersUtil] elapsed: " << elapsed.count() * 1000 << " ms\n";
 }

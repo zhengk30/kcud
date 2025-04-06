@@ -1,10 +1,19 @@
-project('duckreg', 'c', 'cpp',
+project('RegDuck', 'c', 'cpp',
   default_options: ['warning_level=2', 'optimization=0']
 )
 
+regex_dep = dependency('re2', required: false)
+if not regex_dep.found()
+  regex_sp = subproject('regex/re2_regex')
+  regex_dep = regex_sp.get_variable('regex_dep')
+endif
+
+
 executable('main',
   cpp_args: ['-std=c++17'],
+  dependencies: [regex_dep],
   sources: ['main.cpp',
+            'regex/duckdb_regex/regex.cpp',
             'parser/include/decoder/decoder.cpp',
             'parser/block/metadata_block.cpp',
             'parser/block/storage_block.cpp',
