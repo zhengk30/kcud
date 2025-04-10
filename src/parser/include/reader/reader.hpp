@@ -201,6 +201,13 @@ public:
         memcpy(dest, ptr, sizeof(T) * n);
         cursor_ += sizeof(T) * n;
     }
+    template <typename T>
+    T Read(vector<T>& dest, uint64_t n) {
+        T* ptr = reinterpret_cast<T *>(cursor_);
+        copy(ptr, ptr + n, back_insert_iterator(dest));
+        cursor_ += sizeof(T) * n;
+        return dest[dest.size()-1];
+    }
     template <typename T> T Read() {
         T* ptr = reinterpret_cast<T *>(cursor_);
         T val = *ptr;

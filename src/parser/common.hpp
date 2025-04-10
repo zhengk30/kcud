@@ -1,5 +1,7 @@
 #pragma once
 #include <assert.h>
+#include <algorithm>
+#include <iterator>
 #include <unistd.h>
 #include <vector>
 #include <numeric>

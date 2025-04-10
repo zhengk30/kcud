@@ -26,10 +26,10 @@ uint64_t ColumnDataPointer::GetBlockOffset() {
     return pointer_.GetBlockOffset();
 }
 
-string Table::GetString(idx_t i) {
-    assert(i < data.size());
-    return data[i];
-}
+// string Table::GetString(idx_t i) {
+//     assert(i < data.size());
+//     return data[i];
+// }
 
 Table::Table(CatalogType type, string catalog, string schema, uint8_t on_conflict,
             bool temporary, bool internal, string sql, string table, uint8_t ncols,
@@ -39,15 +39,36 @@ Table::Table(CatalogType type, string catalog, string schema, uint8_t on_conflic
             nrows_(nrows), row_group_count_(row_group_count) {
 }
 
+void Table::Clear() {
+    for (uint8_t i = 0; i < NTHREADS; i++) {
+        uint64_t count = partial_counts[i];
+        for (uint64_t j = 0; j < count; j++) {
+            delete [] partial_strings[i][j];
+        }
+        delete [] partial_strings[i];
+    }
+    delete [] partial_strings;
+    delete [] partial_counts;
+}
+
 ColumnInfo::ColumnInfo() {}
 
-void Table::LoadData(const char* path) {
-    auto start = chrono::high_resolution_clock::now();
-    uint64_t count = 0;
+void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uint64_t start, uint64_t end,
+                        char*** partial_strings, uint64_t* partial_count) {
+    // auto start_time = chrono::high_resolution_clock::now();
     ifstream file(path, ios::binary);
     auto file_size = filesystem::file_size(filesystem::path(path));
     byte_t block[DEFAULT_BLOCK_SIZE];
-    for (auto& pointer : data_pointers_) {
+
+    uint64_t count = 0;
+    for (uint64_t k = start; k < end; k++) {
+        count += pointers[k].GetTupleCount();
+    }
+    uint64_t idx = 0;
+    *partial_strings = new char*[count];
+
+    for (uint64_t k = start; k < end; k++) {
+        ColumnDataPointer pointer = pointers[k];
         uint64_t block_id = pointer.GetBlockId();
         uint64_t block_offset = pointer.GetBlockOffset();
         uint64_t tuple_count = pointer.GetTupleCount();
@@ -57,35 +78,56 @@ void Table::LoadData(const char* path) {
         file.read(reinterpret_cast<char *>(block), read_size);
 
         byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
+
         DataReader offset_reader(cursor);
         uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
-        uint32_t offset_array[tuple_count];
-        offset_reader.Read<uint32_t>(offset_array, tuple_count);
-        // printf("offset_vector.size()=%llu\n", offset_vector.size());
-        uint32_t total_length = offset_array[tuple_count-1];
 
-        byte_t* string_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
-        // string new_chars(reinterpret_cast<char *>(bytes));
-        // characters += new_chars;
+        uint32_t length_array[tuple_count];
+        idx_t length_idx = 0;
 
-        DataReader string_reader(string_start);
-        for (uint64_t i = 0; i < tuple_count; i++) {
-            auto j = tuple_count - 1 - i;
-            auto length = offset_array[j];
-            if (j > 0) {
-                length -= offset_array[j-1];
-            }
-            // std::cout << length << '\n';
-            char row[length];
-            string_reader.Read<char>(row, length);
-            data.push_back(string(row, length));
+        uint32_t prev = 0;
+        uint32_t curr = 0;
+        for (auto i = 0; i < tuple_count; i++) {
+            curr = offset_reader.Read<uint32_t>();
+            length_array[length_idx++] = (curr - prev);
+            prev = curr;
         }
-    
+
+        uint32_t total_length = curr;
+        
+        char* string_start = reinterpret_cast<char *>(block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length);
+        for (auto i = 0; i < tuple_count; i++) {
+            auto j = tuple_count - 1 - i;
+            auto length = length_array[j];
+            (*partial_strings)[idx] = new char[length + 1];
+            memcpy((*partial_strings)[idx], string_start, length);
+            (*partial_strings)[idx++][length] = 0;
+            string_start += length;
+        }
     }
-    auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double> elapsed = end - start;
-    // cout << "count: " << data.size() <<  ", elapsed: " << elapsed.count() << '\n';
+    *partial_count = count;
     file.close();
+}
+
+void Table::LoadData(const char* path) {
+    auto n_data_pointers = data_pointers_.size();
+    auto n_data_pointers_per_thread = n_data_pointers / NTHREADS;
+    vector<thread> threads;
+    // char** partial_strings[NTHREADS];
+    // uint64_t partial_counts[NTHREADS];
+    partial_strings = new char**[NTHREADS];
+    partial_counts = new uint64_t[NTHREADS];
+
+    for (auto i = 0; i < NTHREADS; i++) {
+        auto start = i * n_data_pointers_per_thread;
+        auto end = (i == NTHREADS-1) ? n_data_pointers : (i + 1) * n_data_pointers_per_thread;
+        threads.emplace_back(
+            load_data_worker, path, ref(data_pointers_), start, end, &partial_strings[i], &partial_counts[i]
+        );
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
 }
 
 void Table::LoadTableColumns(field_id_t field_id, Reader& reader) {
@@ -127,6 +169,26 @@ void Table::ReadRowCount(field_id_t field_id, Reader& reader) {
 void Table::ReadIndexPointers(field_id_t field_id, Reader& reader) {
     auto count = reader.ReadEncoded<uint64_t>(field_id);
     assert(count == 0);
+}
+
+// char* Table::GetString(idx_t i) {
+//     assert(i < nrows_);
+//     auto thread_id = i / NTHREADS;
+//     auto thread_off = i % NTHREADS;
+//     printf("thread_id=%llu, thread_off=%llu\n", thread_id, thread_off);
+//     return partial_strings[thread_id][thread_off];
+// }
+
+char* Table::GetString(uint8_t thread_id, idx_t thread_off) {
+    return partial_strings[thread_id][thread_off];
+}
+
+uint64_t Table::GetCountPerThread(uint8_t thread_id) {
+    return partial_counts[thread_id];
+}
+
+char** Table::GetStringsPerThread(uint8_t thread_id) {
+    return partial_strings[thread_id];
 }
 
 void ColumnInfo::Deserialize(ColumnInfo& info, Reader& reader) {
@@ -178,51 +240,3 @@ RowGroup* Table::GetRowGroup(idx_t i) {
     assert(i < row_group_count_);
     return row_groups_[i];
 }
-
-// void Table::ParseData(byte_t* block, uint64_t read_size, uint64_t tuple_count, uint64_t block_offset) {
-//     byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
-//     DataReader offset_reader(cursor);
-//     uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
-//     uint32_t offset_array[tuple_count];
-//     offset_reader.Read<uint32_t>(offset_array, tuple_count);
-//     vector<uint32_t> offset_vector(
-//         offset_array, offset_array+sizeof(offset_array)/sizeof(offset_array[0])
-//     );
-//     // printf("offset_vector.size()=%llu\n", offset_vector.size());
-//     uint32_t total_length = offset_array[tuple_count-1];
-
-//     byte_t* string_start = block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length;
-//     // string new_chars(reinterpret_cast<char *>(bytes));
-//     // characters += new_chars;
-
-//     DataReader string_reader(string_start);
-//     auto cons = end + start - 1;
-//     for (uint64_t i = 0; i < tuple_count; i++) {
-//         auto j = cons - i;
-//         auto length = offset_array[j];
-//         if (j > 0) {
-//             length -= offset_array[j-1];
-//         }
-//         char row[length];
-//         string_reader.Read<char>(row, length);
-//         // TODO: store the string while minimizing contention
-        
-//     }
-    
-//     // uint64_t nrows_per_thread = tuple_count / NTHREADS;
-//     // vector<thread> threads;
-//     // for (uint8_t i = 0; i < NTHREADS; i++) {
-//     //     uint64_t start = i * nrows_per_thread;
-//     //     uint64_t end = (i == NTHREADS - 1) ? tuple_count : (i + 1) * nrows_per_thread;
-//     //     threads.emplace_back(
-//     //         parse_data_worker, ref(string_reader), start, end, ref(offset_vector)
-//     //     );
-//     // }
-//     // for (auto& t : threads) {
-//     //     t.join();
-//     // }
-    
-//     // parse_data_worker(string_reader, 0, tuple_count, offset_vector);
-
-    
-// }

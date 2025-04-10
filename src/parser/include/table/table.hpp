@@ -45,7 +45,10 @@ public:
     void AddColumnDataPointer(uint64_t, uint64_t, StorageBlock);
     uint64_t GetRowGroupCount();
     RowGroup* GetRowGroup(idx_t i);
-    string GetString(idx_t i);
+    void Clear();
+    char* GetString(uint8_t, idx_t);
+    uint64_t GetCountPerThread(uint8_t);
+    char** GetStringsPerThread(uint8_t);
 private:
     CatalogType type_;
     string catalog_name_;
@@ -62,10 +65,11 @@ private:
     vector<RowGroup*> row_groups_;
     vector<ColumnInfo> columns_meta_;
     vector<ColumnDataPointer> data_pointers_;
-    vector<string> data;
-    
-
     MetadataBlock table_start_;
+
+    char*** partial_strings;
+    uint64_t* partial_counts;
+
     void LoadTableColumns(field_id_t, Reader&);
     void ReadRowCount(field_id_t, Reader&);
     void ReadIndexPointers(field_id_t, Reader&);

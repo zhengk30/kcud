@@ -65,13 +65,6 @@ Table* Database::GetTable(idx_t i) {
 
 void Database::ScanTable(Table* table) {
     table->LoadData(file_path);
-    // auto start = chrono::high_resolution_clock::now();
-    // for (auto& pointer : data_pointers) {
-    //     LoadData(pointer);
-    // }
-    // auto end = chrono::high_resolution_clock::now();
-    // chrono::duration<double> elapsed = end - start;
-    // std::cout << "table scan: " << elapsed.count() << " sec\n";
 }
 
 void Database::LoadListEntries() {
@@ -154,14 +147,12 @@ void Database::LoadColumnDataPointers(Table* table) {
 }
 
 void Database::LoadColumnDataPointersUtil(Table* table, MetadataBlock& meta_block){
-    auto start_time = chrono::high_resolution_clock::now();
     idx_t block_id = meta_block.GetBlockId();
     idx_t block_index = meta_block.GetBlockIndex();
     idx_t block_offset = meta_block.GetBlockOffset();
     byte_t block[DEFAULT_BLOCK_SIZE];
     file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE, ios::beg);
     file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
-    // auto offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE +METADATA_BLOCK_SIZE * block_index;
     Reader reader(block);
     
     reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index);
@@ -196,7 +187,4 @@ void Database::LoadColumnDataPointersUtil(Table* table, MetadataBlock& meta_bloc
         // ColumnDataPointer data_pointer(row_start, tuple_count, data_block);
         table->AddColumnDataPointer(row_start, tuple_count, data_block);
     }
-    auto end_time = chrono::high_resolution_clock::now();
-    chrono::duration<double> elapsed = end_time - start_time;
-    // cout << "[LoadColumnDataPointersUtil] elapsed: " << elapsed.count() * 1000 << " ms\n";
 }
