@@ -14,6 +14,17 @@ StorageBlock StorageBlock::Deserialize(field_id_t field_id, Reader& reader) {
     return block;
 }
 
+StorageBlock StorageBlock::Deserialize(field_id_t field_id, LinkedListReader& reader) {
+    auto actual_field_id = reader.Read<field_id_t>();
+    // printf("actual_field_id=%llu, expected_field_id=%llu\n", actual_field_id, field_id);
+    assert(actual_field_id == field_id);
+    StorageBlock block;
+    block.block_id_ = reader.ReadEncoded<idx_t>(100);
+    block.block_offset_ = reader.ReadEncoded<idx_t>(101);
+    assert(reader.Read<field_id_t>() == OBJECT_END);
+    return block;
+}
+
 void StorageBlock::operator=(StorageBlock& other) {
     block_id_ = other.block_id_;
     block_offset_ = other.block_offset_;

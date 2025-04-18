@@ -140,6 +140,7 @@ public:
 		this->id = static_cast<CompressionTypeId>(id);
 	}
 	static CompressionType Deserialize(field_id_t, Reader&);
+	static CompressionType Deserialize(field_id_t, LinkedListReader&);
 private:
 	CompressionTypeId id;
 };

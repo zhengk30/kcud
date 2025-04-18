@@ -1,9 +1,9 @@
 #include "parser/include/database/database.hpp"
 #include "regex/regex.hpp"
-#define DBFILE "../test/tpch_lineitem_comment.db"
+#define DBFILE "../test/tpch_lineitem_comment_sf30.db"
 
 //
-// NOTE: don't reuse re2::RE2 object, create a new one for each thread!
+// NOTE: don't reuse re2::RE2 object across threads, create a new one for each thread!
 //
 //
 void re2_regex_match_count(char** partial_strings, uint64_t partial_count, const char* pattern_ptr, uint64_t* count) {
@@ -41,15 +41,6 @@ int main() {
     std::cout << "[ScanTable] elapsed: " << elapsed.count() << " sec\n";
 
     const char* re2_pattern = ".*regular.*";
-    // TODO: regex benchmarking
-    // const char* plain_pattern = "%regular%";
-    // re2::RE2 re2_pattern(".*regular.*");
-    // uint64_t match_count = 0;
-
-    // auto nthreads = NTHREADS;
-    // auto row_count = db.GetRowCount();
-    // auto batch_size = (row_count + nthreads - 1) / nthreads;
-
     // //
     // // benchmarking duckdb's regex operator
     // //
@@ -78,7 +69,6 @@ int main() {
     // //
     vector<thread> re2_threads;
     start = chrono::high_resolution_clock::now();
-    // uint64_t counts[NTHREADS];
     vector<uint64_t> counts(NTHREADS * 8);
     uint64_t match_count = 0;
     for (unsigned i = 0; i < NTHREADS; i++) {   
@@ -94,19 +84,6 @@ int main() {
     elapsed = end - start;
     std::cout << "[RE2 regex parallel]" << " elapsed time: " << elapsed.count() << " sec\n";
     std::cout << "match_count = " << match_count << '\n';
-    // //
-    // // benchmarking re2's serial matching
-    // //
-    // //
-    // vector<uint64_t> re2_serial_results(1);
-    // start_time = chrono::high_resolution_clock::now();
-    // match_count = 0;
-    // for (auto& row : db) {
-    //     match_count += re2::RE2::FullMatch(row, re2_pattern);
-    // }
-    // end_time = chrono::high_resolution_clock::now();
-    // elapsed = end_time - start_time;
-    // std::cout << "[RE2 regex serial] # matches = " << match_count << ", elapsed time: " << elapsed.count() << " sec\n";
 
     table->Clear();
     return 0;

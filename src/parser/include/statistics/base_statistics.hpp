@@ -6,4 +6,5 @@
 class BaseStatistics {
 public:
     static void Deserialize(field_id_t, Reader&);
+    static void Deserialize(field_id_t, LinkedListReader&);
 };

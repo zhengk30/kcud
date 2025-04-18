@@ -1,0 +1,147 @@
+Directory already configured.
+
+Just run your build command (e.g. ninja) and Meson will regenerate as necessary.
+Run "meson setup --reconfigure to force Meson to regenerate.
+
+If build failures persist, run "meson setup --wipe" to rebuild from scratch
+using the same options as passed when configuring the build.
+ninja: Entering directory `/Users/kaiwenzheng/Documents/RegDuck/src/build'
+[1/13] Compiling C++ object main.p/parser_block_metadata_block.cpp.o
+In file included from ../parser/block/metadata_block.cpp:1:
+In file included from ../parser/block/../include/block/metadata_block.hpp:3:
+../parser/block/../include/block/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[2/13] Compiling C++ object main.p/parser_schema_schema.cpp.o
+In file included from ../parser/schema/schema.cpp:1:
+In file included from ../parser/schema/../include/schema/schema.hpp:2:
+In file included from ../parser/schema/../include/schema/../type_info/type_info.hpp:3:
+../parser/schema/../include/schema/../type_info/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[3/13] Compiling C++ object main.p/parser_statistics_base_statistics.cpp.o
+In file included from ../parser/statistics/base_statistics.cpp:2:
+In file included from ../parser/statistics/../include/statistics/base_statistics.hpp:2:
+../parser/statistics/../include/statistics/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+../parser/statistics/base_statistics.cpp:31:7: warning: unused variable 'distinct_count' [-Wunused-variable]
+   31 |         auto distinct_count = reader.ReadEncoded<idx_t>(102);  // distinct_count
+      |              ^~~~~~~~~~~~~~
+2 warnings generated.
+[4/13] Compiling C++ object main.p/parser_block_storage_block.cpp.o
+In file included from ../parser/block/storage_block.cpp:1:
+In file included from ../parser/block/../include/block/storage_block.hpp:3:
+../parser/block/../include/block/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+In file included from ../parser/block/storage_block.cpp:1:
+../parser/block/../include/block/storage_block.hpp:11:10: warning: definition of implicit copy constructor for 'StorageBlock' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+   11 |     void operator=(StorageBlock&);
+      |          ^
+../parser/block/storage_block.cpp:14:12: note: in implicit copy constructor for 'StorageBlock' first required here
+   14 |     return block;
+      |            ^
+2 warnings generated.
+[5/13] Compiling C++ object main.p/parser_type_info_type_info.cpp.o
+In file included from ../parser/type_info/type_info.cpp:1:
+In file included from ../parser/type_info/../include/type_info/type_info.hpp:3:
+../parser/type_info/../include/type_info/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[6/13] Compiling C++ object main.p/parser_header_main_header.cpp.o
+In file included from ../parser/header/main_header.cpp:1:
+In file included from ../parser/header/../include/header/main_header.hpp:4:
+../parser/header/../include/header/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[7/13] Compiling C++ object main.p/parser_statistics_distinct_statistics.cpp.o
+In file included from ../parser/statistics/distinct_statistics.cpp:1:
+In file included from ../parser/statistics/../include/statistics/distinct_statistics.hpp:2:
+../parser/statistics/../include/statistics/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[8/13] Compiling C++ object main.p/parser_header_database_header.cpp.o
+In file included from ../parser/header/database_header.cpp:1:
+In file included from ../parser/header/../include/header/database_header.hpp:3:
+../parser/header/../include/header/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[9/13] Compiling C++ object main.p/parser_row_group_row_group.cpp.o
+In file included from ../parser/row_group/row_group.cpp:1:
+In file included from ../parser/row_group/../include/row_group/row_group.hpp:3:
+In file included from ../parser/row_group/../include/row_group/../block/metadata_block.hpp:3:
+../parser/row_group/../include/row_group/../block/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[10/13] Compiling C++ object main.p/parser_database_database.cpp.o
+In file included from ../parser/database/database.cpp:1:
+In file included from ../parser/database/../include/database/database.hpp:3:
+In file included from ../parser/database/../include/database/../header/database_header.hpp:3:
+../parser/database/../include/database/../header/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+In file included from ../parser/database/database.cpp:1:
+In file included from ../parser/database/../include/database/database.hpp:4:
+../parser/database/../include/database/../block/storage_block.hpp:11:10: warning: definition of implicit copy constructor for 'StorageBlock' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+   11 |     void operator=(StorageBlock&);
+      |          ^
+../parser/database/database.cpp:171:61: note: in implicit copy constructor for 'StorageBlock' first required here
+  171 |         table->AddColumnDataPointer(row_start, tuple_count, data_block);
+      |                                                             ^
+../parser/database/database.cpp:164:14: warning: unused variable 'compression' [-Wunused-variable]
+  164 |         auto compression = CompressionType::Deserialize(103, reader);
+      |              ^~~~~~~~~~~
+3 warnings generated.
+[11/13] Compiling C++ object main.p/main.cpp.o
+In file included from ../main.cpp:1:
+In file included from ../parser/include/database/database.hpp:3:
+In file included from ../parser/include/database/../header/database_header.hpp:3:
+../parser/include/database/../header/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[12/13] Compiling C++ object main.p/parser_table_table.cpp.o
+In file included from ../parser/table/table.cpp:1:
+In file included from ../parser/table/../include/table/table.hpp:2:
+In file included from ../parser/table/../include/table/../block/metadata_block.hpp:3:
+../parser/table/../include/table/../block/../reader/reader.hpp:236:27: warning: comparison of integers of different signs: 'int' and 'unsigned long' [-Wsign-compare]
+  236 |         for (int i = 0; i < METADATA_BLOCK_SIZE; i++) {
+      |                         ~ ^ ~~~~~~~~~~~~~~~~~~~
+In file included from ../parser/table/table.cpp:1:
+In file included from ../parser/table/../include/table/table.hpp:3:
+../parser/table/../include/table/../block/storage_block.hpp:11:10: warning: definition of implicit copy constructor for 'StorageBlock' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+   11 |     void operator=(StorageBlock&);
+      |          ^
+../parser/table/../include/table/table.hpp:19:7: note: in implicit copy constructor for 'StorageBlock' first required here
+   19 | class ColumnDataPointer {
+      |       ^
+../parser/table/table.cpp:71:37: note: in implicit copy constructor for 'ColumnDataPointer' first required here
+   71 |         ColumnDataPointer pointer = pointers[k];
+      |                                     ^
+../parser/table/table.cpp:90:28: warning: comparison of integers of different signs: 'int' and 'uint64_t' (aka 'unsigned long long') [-Wsign-compare]
+   90 |         for (auto i = 0; i < tuple_count; i++) {
+      |                          ~ ^ ~~~~~~~~~~~
+../parser/table/table.cpp:99:28: warning: comparison of integers of different signs: 'int' and 'uint64_t' (aka 'unsigned long long') [-Wsign-compare]
+   99 |         for (auto i = 0; i < tuple_count; i++) {
+      |                          ~ ^ ~~~~~~~~~~~
+../parser/table/table.cpp:121:24: warning: comparison of integers of different signs: 'int' and 'unsigned int' [-Wsign-compare]
+  121 |     for (auto i = 0; i < NTHREADS; i++) {
+      |                      ~ ^ ~~~~~~~~
+../parser/table/table.cpp:123:23: warning: comparison of integers of different signs: 'int' and 'unsigned int' [-Wsign-compare]
+  123 |         auto end = (i == NTHREADS-1) ? n_data_pointers : (i + 1) * n_data_pointers_per_thread;
+      |                     ~ ^  ~~~~~~~~~~
+6 warnings generated.
+[13/13] Linking target main
+INFO: autodetecting backend as ninja
+INFO: calculating backend command to run: /opt/homebrew/bin/ninja -C /Users/kaiwenzheng/Documents/RegDuck/src/build
+2b ff ff ff ff ff ff 64 00 ec a2 1c 65 00 a5 43 cc 00 2b ff ff ff ff ff ff 64 00 cb de 52 65 00 cc 00 2b ff ff ff ff ff ff 64 00 da ee 88 01 65 64 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 54 00 01 66 00 00 67 00 c8 00 08 20 54 69 72 65 73 64 00 ec 04 ff ff 67 00 01 68 00 64 00 00 65 00 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 05 ff ff 67 00 01 68 00 64 00 00 65 00 01 66 00 2b ff ff ff ff ff ff 64 00 b4 ed e6 03 65 00 9f 00 2b ff ff ff ff ff ff 64 00 9b cc 81 04 65 00 f1 13 66 00 64 00 be f2 00 65 00 c0 d1 09 ff ff ec 04 65 00 97 43 66 00 64 00 a7 f1 00 ff ff 67 00 08 7a 7a 6c 65 20 63 61 72 ca 00 00 cb 00 01 64 00 95 0b ff ff 67 00 01 68 00 64 00 00 65 00 06 65 00 b6 43 66 00 64 00 d0 f4 00 ff ff 67 00 c3 06 65 00 eb 42 66 00 64 00 a0 f4 00 ff ff 67 84 de 06 65 00 dc 42 66 00 64 00 cf f3 00 ff ff 42 66 00 64 00 ca 0e ff ff 67 00 01 68 00 64 00 c9 07 65 00 e5 42 66 00 64 00 92 0f ff ff 67 00 cc 00 2b ff ff ff ff ff ff 65 00 64 00 01 64 00 ca 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 65 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 54 69 c1 12 ff ff 67 00 01 68 00 64 00 00 65 00 01 66 65 00 8d 43 66 00 64 00 cc 13 ff ff 67 00 01 68 00 01 cc 00 2b ff ff ff ff ff ff 64 00 c5 ec c1 c9 00 08 7a 6c 65 20 70 65 6e 64 ca 00 00 cb 00 00 67 00 c8 00 08 20 54 69 72 65 73 69 61 c9 00 0d 65 00 91 43 66 00 64 00 9e 1a ff ff 67 00 01 64 00 d2 de ff 0d 65 00 fb 42 66 00 64 00 a0 1b 00 67 00 c8 00 08 20 54 69 72 65 73 69 61 c9 00 00 08 20 54 69 72 65 73 69 61 c9 00 08 7a 6c 65 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 a1 e1 65 00 f7 42 66 00 64 00 df 23 ff ff 67 00 01 68 12 65 00 88 43 66 00 64 00 e1 23 ff ff 67 00 01 cc 00 2b ff ff ff ff ff ff 64 00 cd 8e b3 13 65 ca 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 06 64 00 e7 c8 9d 14 65 00 e9 42 66 00 64 00 b0 00 01 66 00 00 67 00 c8 00 08 20 54 69 72 65 73 e5 f8 a1 15 65 00 92 43 66 00 64 00 86 28 ff ff 2b ff ff ff ff ff ff 64 00 ac ed d6 15 65 00 a0 c9 00 08 7a 6c 65 2e 20 61 6c 77 ca 00 00 cb 00 2b ff ff ff ff ff ff 65 00 64 00 01 64 00 88 b6 e6 c4 17 65 00 a1 43 66 00 64 00 c1 2d ff ff 67 00 06 64 00 c0 db f9 17 65 00 ef 42 66 00 64 00 00 01 66 00 00 67 00 c8 00 08 20 61 62 6f 75 74 43 66 00 64 00 fa 2e ff ff 67 00 01 68 00 64 00 00 2b ff ff ff ff ff ff 64 00 8e fe b2 19 65 00 64 00 ac 33 ff ff 67 00 01 68 00 64 00 00 65 00 00 08 20 54 69 72 65 73 69 61 c9 00 08 7a 7a 6c c8 00 08 20 54 69 72 65 73 69 61 c9 00 08 7a 65 65 00 8e 43 66 00 64 00 f3 34 ff ff 67 00 01 68 cc 00 2b ff ff ff ff ff ff 64 00 a2 ab d6 1b 65 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 36 65 00 a8 b2 05 ff ff 67 00 01 68 00 64 00 00 c8 00 08 20 54 69 72 65 73 69 61 c9 00 08 7a 6c 65 00 cf 42 66 00 64 00 d3 3a ff ff 67 00 01 68 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 54 69 64 00 bb 9e c9 1e 65 00 98 43 66 00 64 00 f7 3a 00 a8 e5 0a ff ff 67 00 01 68 00 64 00 00 65 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 8f 88 8f 13 66 00 64 00 e2 3c 65 00 90 ad 05 ff ff 67 64 00 b4 c9 82 20 65 00 d0 12 66 00 64 00 ac 3d ca 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 c9 00 08 7a 6c 65 20 62 6c 69 74 ca 00 00 cb 00 64 00 f9 3f ff ff 67 00 01 68 00 64 00 00 65 00 00 08 7a 7a 6c 65 3f 20 66 6c ca 00 00 cb 00 01 00 67 00 c8 00 08 20 54 69 72 65 73 69 61 c9 00 00 85 80 8a 22 65 00 fe 42 66 00 64 00 df c0 00 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 54 69 2b ff ff ff ff ff ff 64 00 f0 aa c2 23 65 00 9e 00 e4 43 66 00 64 00 cd c3 00 ff ff 67 00 01 68 64 00 b9 c6 00 ff ff 67 00 01 68 00 64 00 00 65 00 9d d4 f8 24 65 00 8e 43 66 00 64 00 e1 c5 00 64 00 c5 da c7 25 65 00 c3 43 66 00 64 00 cf c7 ca 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 ff ff 67 00 01 68 00 64 00 00 65 00 01 66 00 8a 43 66 00 64 00 98 ca 00 ff ff 67 00 01 68 00 85 ce 27 65 00 8d 43 66 00 64 00 8f cc 00 ff ff 00 01 cc 00 2b ff ff ff ff ff ff 64 00 ed e5 b6 66 00 00 67 00 c8 00 08 20 61 62 6f 75 74 20 74 ca 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 00 67 00 c8 00 08 20 61 62 6f 75 74 20 74 c9 d7 2a 65 00 df 42 66 00 64 00 c0 d2 00 ff ff 67 2b ff ff ff ff ff ff 64 00 a9 f5 f0 2a 65 00 a9 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 61 62 64 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 61 ea d3 00 ff ff 67 00 01 68 00 64 00 00 65 00 01 00 00 67 00 c8 00 08 20 54 69 72 65 73 69 61 c9 2b ff ff ff ff ff ff 64 00 d3 b8 93 2e 65 00 70 00 08 7a 65 20 66 75 72 69 6f ca 00 00 cb 00 01 64 00 c0 d9 00 65 00 90 e8 0a ff ff 67 00 01 68 00 ab 43 66 00 64 00 db da 00 ff ff 67 00 01 68 f2 cc cd 30 65 00 f7 42 66 00 64 00 87 dd 00 ff 00 01 66 00 00 67 00 c8 00 08 20 61 62 6f 75 74 00 00 cb 00 01 cc 00 2b ff ff ff ff ff ff 64 00 b4 df 00 ff ff 67 00 01 68 00 64 00 00 65 00 01 00 08 20 54 69 72 65 73 69 61 c9 00 08 7a 7a 6c 42 66 00 64 00 9e e1 00 ff ff 67 00 01 68 00 64 00 0f 64 00 f1 86 a0 33 65 00 b9 43 66 00 64 00 80 e6 00 65 00 d0 c7 04 ff ff 67 00 01 68 00 64 d1 ee 33 65 00 b3 43 66 00 64 00 9e e3 00 ff ff db bd 34 65 00 90 43 66 00 64 00 bb e4 00 ff ff 2b ff ff ff ff ff ff 64 00 cf fc a6 35 65 00 f6 c8 00 08 20 61 62 6f 75 74 20 74 c9 00 08 7a 6c 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 61 62 00 ff ff 67 00 01 68 00 64 00 00 65 00 01 66 00 36 65 00 b3 43 66 00 64 00 84 e9 00 ff ff 67 00 cc 00 2b ff ff ff ff ff ff 64 00 8c c6 e1 37 65 00 08 7a 6c 65 20 62 6c 69 74 ca 00 00 cb 00 01 00 ff ff 67 00 01 68 00 64 00 00 65 00 01 66 00 38 65 00 ed 42 66 00 64 00 c1 ea 00 ff ff 67 00 00 00 65 00 01 66 00 00 67 00 c8 00 08 20 54 69 [ScanTable] elapsed: 6.82237 sec
+[RE2 regex parallel] elapsed time: 2.80944 sec
+match_count = 13754086

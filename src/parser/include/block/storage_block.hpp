@@ -7,6 +7,7 @@ public:
     StorageBlock() = default;
     StorageBlock(idx_t, idx_t);
     static StorageBlock Deserialize(field_id_t, Reader&);
+    static StorageBlock Deserialize(field_id_t, LinkedListReader&);
     void operator=(StorageBlock&);
     idx_t GetBlockId();
     idx_t GetBlockOffset();
