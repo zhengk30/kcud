@@ -17,7 +17,6 @@ void BaseStatistics::Deserialize(field_id_t field_id, Reader& reader) {
 }
 
 void BaseStatistics::Deserialize(field_id_t field_id, LinkedListReader& reader) {
-    // reader.PrintNBytes(128);
     // printf("[base_statistics.cpp -> Deserialize] (@start) offset=%llu\n", reader.GetCurrentOffset());
     // printf("next metadata ptr: %llx\n", reader.GetPointerToNextMetaBlock());
     field_id_t actual_field_id = reader.Read<field_id_t>();
@@ -28,7 +27,7 @@ void BaseStatistics::Deserialize(field_id_t field_id, LinkedListReader& reader) 
 
     (void)reader.Read<bool>(100);  // has_null
 	(void)reader.Read<bool>(101);  // has_no_null
-	auto distinct_count = reader.ReadEncoded<idx_t>(102);  // distinct_count
+	(void)reader.ReadEncoded<idx_t>(102);  // distinct_count
     // auto val = reader.Read<field_id_t>();
     // printf("val=%llx\n", val);
     assert(reader.Read<field_id_t>() == 103);  // about to read string stats

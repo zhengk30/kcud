@@ -87,7 +87,7 @@ void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uin
 
         uint32_t prev = 0;
         uint32_t curr = 0;
-        for (auto i = 0; i < tuple_count; i++) {
+        for (uint64_t i = 0; i < tuple_count; i++) {
             curr = offset_reader.Read<uint32_t>();
             length_array[length_idx++] = (curr - prev);
             prev = curr;
@@ -96,7 +96,7 @@ void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uin
         uint32_t total_length = curr;
         
         char* string_start = reinterpret_cast<char *>(block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length);
-        for (auto i = 0; i < tuple_count; i++) {
+        for (uint64_t i = 0; i < tuple_count; i++) {
             auto j = tuple_count - 1 - i;
             auto length = length_array[j];
             (*partial_strings)[idx] = new char[length + 1];
@@ -118,7 +118,7 @@ void Table::LoadData(const char* path) {
     partial_strings = new char**[NTHREADS];
     partial_counts = new uint64_t[NTHREADS];
 
-    for (auto i = 0; i < NTHREADS; i++) {
+    for (unsigned i = 0; i < NTHREADS; i++) {
         auto start = i * n_data_pointers_per_thread;
         auto end = (i == NTHREADS-1) ? n_data_pointers : (i + 1) * n_data_pointers_per_thread;
         threads.emplace_back(

@@ -163,6 +163,7 @@ void Database::LoadColumnDataPointersUtil(Table* table, MetadataBlock& meta_bloc
         auto data_block = StorageBlock::Deserialize(102, reader);
         auto compression = CompressionType::Deserialize(103, reader);
         BaseStatistics::Deserialize(104, reader);
+        (void)compression;
         assert(reader.Read<field_id_t>() == OBJECT_END);  // base stats end
         assert(reader.Read<field_id_t>() == OBJECT_END);
         // printf("row_start=%llu, tuple_count=%llu, block_id=%llu, offset=%llu\n",
