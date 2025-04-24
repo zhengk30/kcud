@@ -3,12 +3,16 @@
 #include "../src/regex/regex.hpp"
 
 #define PATTERN ".*regular.*"
+#define NFILES 7
 
-void re2_regex_match_count(char** partial_strings, uint64_t partial_count, const char* pattern_ptr, uint64_t* count) {
+void re2_regex_match_count(char** partial_strings, uint64_t partial_count, const char* pattern_ptr, uint64_t* count, vector<char *>& result) {
     re2::RE2 pattern(pattern_ptr);
     uint64_t total = 0;
     for (uint64_t i = 0; i < partial_count; i++) {
-        total += re2::RE2::FullMatch(partial_strings[i], pattern);
+        if (re2::RE2::FullMatch(partial_strings[i], pattern)) {
+            total++;
+            result.push_back(partial_strings[i]);
+        }
     }
     *count = total;
 }
@@ -24,8 +28,20 @@ int main() {
         "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30.db"
     };
     
-    for (const char* db_file : db_files) {
-        printf("%s\n", db_file);
+    const char* regex_matches_dumps[] = {
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf1_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf2_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf3_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf4_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf10_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf20_matches.txt",
+        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30_matches.txt"
+    };
+
+    for (auto i = 0; i < NFILES; i++) {
+        const char* db_file = db_files[i];
+        const char* dump_file = regex_matches_dumps[i];
+
         Database db(db_file);
         db.LoadExistingDatabase();
         Table* table = db.GetTable(0);
@@ -37,12 +53,13 @@ int main() {
         std::cout << "[SCAN] elapsed: " << elapsed.count() << " sec\n";
 
         vector<thread> re2_threads;
+        vector<vector<char *>> partial_results(NTHREADS);
         start = chrono::high_resolution_clock::now();
         vector<uint64_t> counts(NTHREADS * 8);
         uint64_t match_count = 0;
-        for (unsigned i = 0; i < NTHREADS; i++) {   
+        for (unsigned i = 0; i < NTHREADS; i++) {
             re2_threads.emplace_back(
-                re2_regex_match_count, table->GetStringsPerThread(i), table->GetCountPerThread(i), PATTERN, &counts[i * 8]
+                re2_regex_match_count, table->GetStringsPerThread(i), table->GetCountPerThread(i), PATTERN, &counts[i * 8], ref(partial_results[i])
             );
         }
         for (auto& t : re2_threads) {
@@ -54,6 +71,15 @@ int main() {
         
         std::cout << "[FILTER] elapsed: " << elapsed.count() << " sec\n";
         std::cout << "match count: " << match_count << "\n\n";
+        
+        ofstream dump;
+        assert((dump = ofstream(dump_file)));
+        for (int i = 0; i < NTHREADS; i++) {
+            for (const char* str : partial_results[i]) {
+                dump << str << '\n';
+            }
+        }
+        dump.close();
         table->Clear();
     }
     
