@@ -36,7 +36,7 @@ Table::Table(CatalogType type, string catalog, string schema, uint8_t on_conflic
             uint64_t nrows, uint64_t row_group_count) :
             type_(type), catalog_name_(catalog), schema_name_(schema), on_conflict_(on_conflict),
             temporary_(temporary), internal_(internal), sql_(sql), table_name_(table), ncols_(ncols),
-            nrows_(nrows), row_group_count_(row_group_count) {
+            nrows_(nrows), row_group_count_(row_group_count), thread_cursor(0), per_thread_cursor(0) {
 }
 
 void Table::Clear() {
@@ -175,12 +175,35 @@ void Table::ReadIndexPointers(field_id_t field_id, Reader& reader) {
 //     assert(i < nrows_);
 //     auto thread_id = i / NTHREADS;
 //     auto thread_off = i % NTHREADS;
-//     printf("thread_id=%llu, thread_off=%llu\n", thread_id, thread_off);
 //     return partial_strings[thread_id][thread_off];
 // }
 
-char* Table::GetString(uint8_t thread_id, idx_t thread_off) {
-    return partial_strings[thread_id][thread_off];
+// char* Table::GetString(uint8_t thread_id, idx_t thread_off) {
+//     return partial_strings[thread_id][thread_off];
+// }
+
+uint8_t Table::GetCurrentThreadCursor() {
+    return thread_cursor;
+}
+idx_t Table::GetCurrentPerThreadCursor() {
+    return per_thread_cursor;
+}
+
+char* Table::GetNextString() {
+    bool is_last = (thread_cursor == NTHREADS);  // because of how AdvanceCursors works
+    if (is_last) {
+        return nullptr;
+    }
+    return partial_strings[thread_cursor][per_thread_cursor];
+}
+
+void Table::AdvanceCursors() {
+    uint64_t count = partial_counts[thread_cursor];
+    per_thread_cursor++;
+    if (per_thread_cursor == count) {
+        per_thread_cursor = 0;
+        thread_cursor++;
+    }
 }
 
 uint64_t Table::GetCountPerThread(uint8_t thread_id) {

@@ -40,12 +40,17 @@ public:
     idx_t GetTableStartBlockIndex();
     idx_t GetTableStartBlockOffset();
     uint64_t GetRowCount();
+    void AdvanceCursors();
     void SetRowGroupCount(uint64_t);
     void AddRowGroup(RowGroup*);
     void AddColumnDataPointer(uint64_t, uint64_t, StorageBlock);
     uint64_t GetRowGroupCount();
     RowGroup* GetRowGroup(idx_t i);
     void Clear();
+    char* GetNextString();
+    uint8_t GetCurrentThreadCursor();
+    idx_t GetCurrentPerThreadCursor();
+    char* GetString(idx_t i);
     char* GetString(uint8_t, idx_t);
     uint64_t GetCountPerThread(uint8_t);
     char** GetStringsPerThread(uint8_t);
@@ -69,6 +74,9 @@ private:
 
     char*** partial_strings;
     uint64_t* partial_counts;
+    
+    uint8_t thread_cursor;
+    idx_t per_thread_cursor;
 
     void LoadTableColumns(field_id_t, Reader&);
     void ReadRowCount(field_id_t, Reader&);
