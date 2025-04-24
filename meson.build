@@ -9,7 +9,7 @@ if not regex_dep.found()
 endif
 
 
-executable('bench',
+executable('main',
   cpp_args: ['-std=c++17'],
   dependencies: [regex_dep],
   sources: ['src/regex/duckdb_regex/regex.cpp',
@@ -25,4 +25,4 @@ executable('bench',
             'src/parser/header/main_header.cpp',
             'src/parser/header/database_header.cpp',
             'src/parser/database/database.cpp',
-            'benchmarks/regex_filter_re2.cpp'])
+            'src/regduck_api.cpp', 'src/main.cpp'])

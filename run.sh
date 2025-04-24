@@ -1,4 +1,5 @@
 meson setup build
 meson compile -C build
-build/bench
+build/main
+# build/bench
 rm -rf build
