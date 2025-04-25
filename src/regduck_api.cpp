@@ -1,32 +1,36 @@
 #include "regduck_api.hpp"
 
 #define DBFILE "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf1.db"
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 Table* table = nullptr;
 
-void table_init() {
+void _table_init() {
     Database db(DBFILE);
     db.LoadExistingDatabase();
     table = db.GetTable(0);  // the database file only has one table with one column
     db.ScanTable(table);
 }
 
-size_t load_batched_strings(char* batch_buf, size_t batch_size) {
+size_t load_strings_in_batch(char* batch_buf, size_t batch_size) {
     if (table == nullptr) {
-        table_init();
+        _table_init();
     }
-    printf("thread_cursor=%d, per_thread_cursor=%llu\n", table->GetCurrentThreadCursor(), table->GetCurrentPerThreadCursor());
+    batch_size = MIN(batch_size, MAX_BATCH_SIZE);
     size_t current_size = 0;
     size_t actual_size = 0;
+    size_t i = 0;
     char* str = nullptr;
     while ((str = table->GetNextString())) {
-        current_size += strlen(str);
+        size_t len = strlen(str);
+        current_size += len;
         if (current_size > batch_size) {
-            actual_size = current_size - strlen(str);
+            actual_size = current_size - len;
             break;
         }
+        memcpy(batch_buf + i, str, len);
+        i += len;
         table->AdvanceCursors();
     }
-    printf("actual_size=%llu, batch_size=%llu\n\n", actual_size, batch_size);
-    return current_size;
+    return actual_size;
 }
