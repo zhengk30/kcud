@@ -35,11 +35,11 @@ typedef uint16_t field_id_t;
 #define INVALID_POINTER ((idx_t)(-1))
 #define NTHREADS (thread::hardware_concurrency())
 
-#define GET_READ_SIZE(file, file_size) \
+#define GET_READ_SIZE(offset, file_size) \
 ({ \
     uint64_t _read_size; \
     uint64_t _default_size = DEFAULT_BLOCK_SIZE; \
-    uint64_t _remaining = (file_size) - (file).tellg(); \
+    uint64_t _remaining = (file_size) - (offset); \
     _read_size = (_default_size > _remaining ? _remaining : _default_size); \
     _read_size; \
 })

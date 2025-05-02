@@ -1,12 +1,10 @@
 #include "../include/header/database_header.hpp"
 
-DatabaseHeader::DatabaseHeader(ifstream& file, uint8_t which) {
+DatabaseHeader::DatabaseHeader(int fildes, uint8_t which) {
     off_t file_offset = which * DEFAULT_HEADER_SIZE;
-    file.seekg(file_offset, ios::beg);
-    // byte_t* block = new byte_t[DEFAULT_HEADER_SIZE];
+    lseek(fildes, file_offset, SEEK_SET);
     byte_t block[DEFAULT_HEADER_SIZE];
-    file.read(reinterpret_cast<char *>(block), DEFAULT_HEADER_SIZE);
-    // byte_t* cursor = block + DEFAULT_HEADER_SIZE * which;
+    assert(read(fildes, block, DEFAULT_HEADER_SIZE) == DEFAULT_HEADER_SIZE);
     Reader reader(block);
     uint64_t fields[6];
     reader.Read<uint64_t>(fields, 6);

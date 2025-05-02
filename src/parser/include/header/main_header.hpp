@@ -6,7 +6,7 @@
 class MainHeader {
 public:
     MainHeader() = default;
-    MainHeader(ifstream&);
+    MainHeader(int fildes);
     void Print();
     void operator=(const MainHeader&);
     ~MainHeader() = default;

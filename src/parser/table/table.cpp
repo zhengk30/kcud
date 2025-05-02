@@ -56,8 +56,13 @@ ColumnInfo::ColumnInfo() {}
 void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uint64_t start, uint64_t end,
                         char*** partial_strings, uint64_t* partial_count) {
     // auto start_time = chrono::high_resolution_clock::now();
-    ifstream file(path, ios::binary);
-    auto file_size = filesystem::file_size(filesystem::path(path));
+    // ifstream file(path, ios::binary);
+    // auto file_size = filesystem::file_size(filesystem::path(path));
+
+    int fildes = open(path, O_RDONLY);
+    assert(fildes != -1);
+    size_t file_size = lseek(fildes, 0, SEEK_END);
+
     byte_t block[DEFAULT_BLOCK_SIZE];
 
     uint64_t count = 0;
@@ -73,9 +78,9 @@ void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uin
         uint64_t block_offset = pointer.GetBlockOffset();
         uint64_t tuple_count = pointer.GetTupleCount();
         uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
-        file.seekg(block_start, ios::beg);
-        auto read_size = GET_READ_SIZE(file, file_size);
-        file.read(reinterpret_cast<char *>(block), read_size);
+        assert(lseek(fildes, block_start, SEEK_SET) == block_start);
+        size_t read_size = GET_READ_SIZE(block_start, file_size);
+        assert(read(fildes, block, read_size) == read_size);
 
         byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
 
@@ -106,7 +111,7 @@ void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uin
         }
     }
     *partial_count = count;
-    file.close();
+    assert(close(fildes) == 0);
 }
 
 void Table::LoadData(const char* path) {

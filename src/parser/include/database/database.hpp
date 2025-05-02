@@ -17,7 +17,8 @@ public:
     void ScanTable(Table*);
     Table* GetTable(idx_t);
 private:
-    ifstream file;
+    // ifstream file;
+    int file_fd;
     const char* file_path;
     fsize_t file_size;
     vector<Schema*> schemas;

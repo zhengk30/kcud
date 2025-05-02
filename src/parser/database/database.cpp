@@ -1,12 +1,9 @@
 #include "../include/database/database.hpp"
 
-//
 // Database class methods
-//
-//
 Database::Database(const char* filepath) {
-    assert((file = ifstream(filepath, ifstream::binary)));
-    file_size = filesystem::file_size(filesystem::path(filepath));
+    assert((file_fd = open(filepath, O_RDONLY)) != -1);
+    file_size = static_cast<fsize_t>(lseek(file_fd, 0, SEEK_END));
     file_path = filepath;
 }
 
@@ -20,9 +17,9 @@ void Database::LoadExistingDatabase() {
     //
     //
     auto start = chrono::high_resolution_clock::now();
-    main_header = MainHeader(file);
-    DatabaseHeader db_header_1(file, 1);
-    DatabaseHeader db_header_2(file, 2);
+    main_header = MainHeader(file_fd);
+    DatabaseHeader db_header_1(file_fd, 1);
+    DatabaseHeader db_header_2(file_fd, 2);
     db_header = (db_header_1 > db_header_2) ? db_header_1 : db_header_2;
     LoadListEntries();
     auto end = chrono::high_resolution_clock::now();
@@ -72,8 +69,10 @@ void Database::LoadListEntries() {
     idx_t metablock_index = db_header.GetMetaBlockIndex();
     byte_t block[DEFAULT_BLOCK_SIZE];
 
-    file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
+    off_t file_offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id;
+    assert(lseek(file_fd, file_offset, SEEK_SET) == file_offset);
+    size_t read_size = GET_READ_SIZE(file_offset, file_size);
+    assert(read(file_fd, block, read_size) == read_size);
     byte_t* cursor = block + CHECKSUM_SIZE + METADATA_BLOCK_SIZE * metablock_index;
     Reader reader(cursor);
     
@@ -100,8 +99,10 @@ void Database::LoadRowGroups(Table* table) {
     idx_t block_index = table->GetTableStartBlockIndex();
     idx_t block_offset = table->GetTableStartBlockOffset();
 
-    file.seekg(HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
+    off_t file_offset = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE;
+    assert(lseek(file_fd, file_offset, SEEK_SET) == file_offset);
+    size_t read_size = GET_READ_SIZE(file_offset, file_size);
+    assert(read(file_fd, block, read_size) == read_size);
 
     Reader reader(block);
     reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index + block_offset);

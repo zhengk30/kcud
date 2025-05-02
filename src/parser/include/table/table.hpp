@@ -50,8 +50,6 @@ public:
     char* GetNextString();
     uint8_t GetCurrentThreadCursor();
     idx_t GetCurrentPerThreadCursor();
-    char* GetString(idx_t i);
-    char* GetString(uint8_t, idx_t);
     uint64_t GetCountPerThread(uint8_t);
     char** GetStringsPerThread(uint8_t);
 private:
