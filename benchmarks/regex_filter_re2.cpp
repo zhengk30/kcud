@@ -28,20 +28,19 @@ int main() {
         "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30.db"
     };
     
-    const char* regex_matches_dumps[] = {
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf1_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf2_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf3_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf4_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf10_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf20_matches.txt",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30_matches.txt"
-    };
+    // TODO: uncomment these lines if you want to dump matching strings
+    // const char* regex_matches_dumps[] = {
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf1_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf2_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf3_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf4_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf10_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf20_matches.txt",
+    //     "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30_matches.txt"
+    // };
 
     for (auto i = 0; i < NFILES; i++) {
         const char* db_file = db_files[i];
-        const char* dump_file = regex_matches_dumps[i];
-
         Database db(db_file);
         db.LoadExistingDatabase();
         Table* table = db.GetTable(0);
@@ -71,15 +70,17 @@ int main() {
         
         std::cout << "[FILTER] elapsed: " << elapsed.count() << " sec\n";
         std::cout << "match count: " << match_count << "\n\n";
-        
-        ofstream dump;
-        assert((dump = ofstream(dump_file)));
-        for (int i = 0; i < NTHREADS; i++) {
-            for (const char* str : partial_results[i]) {
-                dump << str << '\n';
-            }
-        }
-        dump.close();
+
+        // TODO: uncomment these lines if you want to dump matching strings
+        // const char* dump_file = regex_matches_dumps[i];
+        // ofstream dump;
+        // assert((dump = ofstream(dump_file)));
+        // for (int i = 0; i < NTHREADS; i++) {
+        //     for (const char* str : partial_results[i]) {
+        //         dump << str << '\n';
+        //     }
+        // }
+        // dump.close();
         table->Clear();
     }
     
