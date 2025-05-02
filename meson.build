@@ -8,8 +8,13 @@ if not regex_dep.found()
   regex_dep = regex_sp.get_variable('regex_dep')
 endif
 
+which_main = 'src/main.cpp'
+is_bench = get_option('bench')
+if is_bench
+  which_main = 'benchmarks/regex_filter_re2.cpp'
+endif
 
-executable('main',
+executable('run',
   cpp_args: ['-std=c++17'],
   dependencies: [regex_dep],
   sources: ['src/regex/duckdb_regex/regex.cpp',
@@ -25,4 +30,4 @@ executable('main',
             'src/parser/header/main_header.cpp',
             'src/parser/header/database_header.cpp',
             'src/parser/database/database.cpp',
-            'src/regduck_api.cpp', 'src/main.cpp'])
+            'src/regduck_api.cpp', which_main])
