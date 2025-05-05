@@ -19,13 +19,13 @@ void re2_regex_match_count(char** partial_strings, uint64_t partial_count, const
 
 int main() {
     const char* db_files[] = {
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf1.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf2.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf3.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf4.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf10.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf20.db",
-        "/Users/kaiwenzheng/Documents/RegDuck/test/tpch_lineitem_comment_sf30.db"
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf1.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf2.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf3.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf4.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf10.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf20.db",
+        "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf30.db"
     };
     
     // TODO: uncomment these lines if you want to dump matching strings
@@ -41,6 +41,11 @@ int main() {
 
     for (auto i = 0; i < NFILES; i++) {
         const char* db_file = db_files[i];
+        if (!filesystem::exists(db_file)) {
+            // TODO: add missing db files
+            continue;
+        }
+
         Database db(db_file);
         db.LoadExistingDatabase();
         Table* table = db.GetTable(0);
@@ -68,6 +73,7 @@ int main() {
         end = chrono::high_resolution_clock::now();
         elapsed = end - start;
         
+        std::cout << db_file << '\n';
         std::cout << "[FILTER] elapsed: " << elapsed.count() << " sec\n";
         std::cout << "match count: " << match_count << "\n\n";
 
