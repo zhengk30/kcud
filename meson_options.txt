@@ -1,1 +1,3 @@
-option('bench', type: 'boolean', value: false)
+option('bench_re2', type: 'boolean', value: false)
+option('bench_duckdb', type: 'boolean', value: false)
+option('test_conn', type: 'boolean', value: false)
