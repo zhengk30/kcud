@@ -43,3 +43,5 @@ typedef uint16_t field_id_t;
     _read_size = (_default_size > _remaining ? _remaining : _default_size); \
     _read_size; \
 })
+
+extern byte_t* binary_file;

@@ -6,10 +6,12 @@
 class MainHeader {
 public:
     MainHeader() = default;
-    MainHeader(ifstream&);
+    MainHeader([[maybe_unused]] int _unused);
+    // MainHeader(ifstream& file);
+    // MainHeader(int placeholder);
     void Print();
-    void operator=(const MainHeader&);
-    ~MainHeader() = default;
+    void operator=(const MainHeader& other);
+    // ~MainHeader() = default;
 private:
     char magic_bytes[4];
 	uint64_t version;

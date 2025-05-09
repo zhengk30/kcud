@@ -5,7 +5,8 @@
 class DatabaseHeader {
 public:
     DatabaseHeader() = default;
-    DatabaseHeader(ifstream&, uint8_t);
+    // DatabaseHeader(ifstream&, uint8_t);
+    DatabaseHeader(uint8_t);
     idx_t GetMetaBlockId();
     idx_t GetMetaBlockIndex();
     idx_t GetFreeListBlockId();

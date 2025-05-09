@@ -1,5 +1,7 @@
 #include "../include/database/database.hpp"
 
+byte_t* binary_file = nullptr;
+
 //
 // Database class methods
 //
@@ -8,6 +10,9 @@ Database::Database(const char* filepath) {
     assert((file = ifstream(filepath, ifstream::binary)));
     file_size = filesystem::file_size(filesystem::path(filepath));
     file_path = filepath;
+
+    assert((binary_file = new byte_t[file_size]) != nullptr);
+    file.read(reinterpret_cast<char *>(binary_file), file_size);
 }
 
 void Database::LoadExistingDatabase() {
@@ -20,9 +25,9 @@ void Database::LoadExistingDatabase() {
     //
     //
     auto start = chrono::high_resolution_clock::now();
-    main_header = MainHeader(file);
-    DatabaseHeader db_header_1(file, 1);
-    DatabaseHeader db_header_2(file, 2);
+    main_header = MainHeader(0);  // 0 is unused
+    DatabaseHeader db_header_1(1);
+    DatabaseHeader db_header_2(2);
     db_header = (db_header_1 > db_header_2) ? db_header_1 : db_header_2;
     LoadListEntries();
     auto end = chrono::high_resolution_clock::now();
@@ -64,16 +69,16 @@ Table* Database::GetTable(idx_t i) {
 }
 
 void Database::ScanTable(Table* table) {
-    table->LoadData(file_path);
+    table->LoadData();
 }
 
 void Database::LoadListEntries() {
     idx_t metablock_id = db_header.GetMetaBlockId();
     idx_t metablock_index = db_header.GetMetaBlockIndex();
-    byte_t block[DEFAULT_BLOCK_SIZE];
-
-    file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
+    // byte_t block[DEFAULT_BLOCK_SIZE];
+    // file.seekg(DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id, ios::beg);
+    // file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
+    byte_t* block = binary_file + DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * metablock_id;
     byte_t* cursor = block + CHECKSUM_SIZE + METADATA_BLOCK_SIZE * metablock_index;
     Reader reader(cursor);
     
@@ -95,14 +100,14 @@ void Database::LoadListEntries() {
 }
 
 void Database::LoadRowGroups(Table* table) {
-    byte_t block[DEFAULT_BLOCK_SIZE];
     idx_t block_id = table->GetTableStartBlockId();
     idx_t block_index = table->GetTableStartBlockIndex();
     idx_t block_offset = table->GetTableStartBlockOffset();
+    // byte_t block[DEFAULT_BLOCK_SIZE];
+    // file.seekg(HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE, ios::beg);
+    // file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
 
-    file.seekg(HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE, ios::beg);
-    file.read(reinterpret_cast<char *>(block), GET_READ_SIZE(file, file_size));
-
+    byte_t* block = binary_file + HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE + CHECKSUM_SIZE;
     Reader reader(block);
     reader.UnalignedAdvance(METADATA_BLOCK_SIZE * block_index + block_offset);
     assert(reader.ReadEncoded<uint64_t>(100) == 1);
@@ -153,7 +158,8 @@ void Database::LoadColumnDataPointersUtil(Table* table, MetadataBlock& meta_bloc
     idx_t block_offset = meta_block.GetBlockOffset();
 
     // printf("block_offset=%llu\n", block_offset);
-    LinkedListReader reader(file_path, block_id, block_index);
+    // LinkedListReader reader(file_path, block_id, block_index);
+    LinkedListReader reader(block_id, block_index);
     reader.Advance(block_offset - POINTER_SIZE);
     auto n_data_pointers = reader.ReadEncoded<uint64_t>(100);
     // printf("n_data_pointers=%llu\n", n_data_pointers);

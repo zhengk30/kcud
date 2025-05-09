@@ -53,13 +53,8 @@ void Table::Clear() {
 
 ColumnInfo::ColumnInfo() {}
 
-void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uint64_t start, uint64_t end,
+void load_data_worker(vector<ColumnDataPointer>& pointers, uint64_t start, uint64_t end,
                         char*** partial_strings, uint64_t* partial_count) {
-    // auto start_time = chrono::high_resolution_clock::now();
-    ifstream file(path, ios::binary);
-    auto file_size = filesystem::file_size(filesystem::path(path));
-    byte_t block[DEFAULT_BLOCK_SIZE];
-
     uint64_t count = 0;
     for (uint64_t k = start; k < end; k++) {
         count += pointers[k].GetTupleCount();
@@ -73,43 +68,35 @@ void load_data_worker(const char* path, vector<ColumnDataPointer>& pointers, uin
         uint64_t block_offset = pointer.GetBlockOffset();
         uint64_t tuple_count = pointer.GetTupleCount();
         uint64_t block_start = HEADER_SIZE * 3 + block_id * DEFAULT_BLOCK_SIZE;
-        file.seekg(block_start, ios::beg);
-        auto read_size = GET_READ_SIZE(file, file_size);
-        file.read(reinterpret_cast<char *>(block), read_size);
-
+        byte_t* block = binary_file + block_start;
         byte_t* cursor = block + CHECKSUM_SIZE + block_offset + sizeof(uint32_t);
 
         DataReader offset_reader(cursor);
         uint32_t dict_end_offset = offset_reader.Read<uint32_t>();
 
-        uint32_t length_array[tuple_count];
-        idx_t length_idx = 0;
+        uint32_t total_length = *reinterpret_cast<uint32_t *>(cursor + tuple_count * sizeof(uint32_t));
+
+        char* schar_array = reinterpret_cast<char *>(block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length);
+        idx_t schar_offset = total_length;
 
         uint32_t prev = 0;
         uint32_t curr = 0;
         for (uint64_t i = 0; i < tuple_count; i++) {
             curr = offset_reader.Read<uint32_t>();
-            length_array[length_idx++] = (curr - prev);
+            uint32_t length = curr - prev;
+            schar_offset -= length;
+            (*partial_strings)[idx] = new char[length + 1];
+            memcpy((*partial_strings)[idx], schar_array + schar_offset, length);
+            (*partial_strings)[idx++][length] = 0;
+            // printf("%s\n", (*partial_strings)[i]);
             prev = curr;
         }
-
-        uint32_t total_length = curr;
-        
-        char* string_start = reinterpret_cast<char *>(block + CHECKSUM_SIZE + block_offset + dict_end_offset - total_length);
-        for (uint64_t i = 0; i < tuple_count; i++) {
-            auto j = tuple_count - 1 - i;
-            auto length = length_array[j];
-            (*partial_strings)[idx] = new char[length + 1];
-            memcpy((*partial_strings)[idx], string_start, length);
-            (*partial_strings)[idx++][length] = 0;
-            string_start += length;
-        }
+        assert(schar_offset == 0);
     }
     *partial_count = count;
-    file.close();
 }
 
-void Table::LoadData(const char* path) {
+void Table::LoadData() {
     auto n_data_pointers = data_pointers_.size();
     auto n_data_pointers_per_thread = n_data_pointers / NTHREADS;
     vector<thread> threads;
@@ -122,12 +109,19 @@ void Table::LoadData(const char* path) {
         auto start = i * n_data_pointers_per_thread;
         auto end = (i == NTHREADS-1) ? n_data_pointers : (i + 1) * n_data_pointers_per_thread;
         threads.emplace_back(
-            load_data_worker, path, ref(data_pointers_), start, end, &partial_strings[i], &partial_counts[i]
+            load_data_worker, ref(data_pointers_), start, end, &partial_strings[i], &partial_counts[i]
         );
     }
     for (auto& t : threads) {
         t.join();
     }
+    // for (unsigned i = 0; i < NTHREADS; i++) {
+    //     auto count = partial_counts[i];
+    //     char** strings = partial_strings[i];
+    //     for (auto j = 0; j < count; j++) {
+    //         printf("%s\n", strings[j]);
+    //     }
+    // }
 }
 
 void Table::LoadTableColumns(field_id_t field_id, Reader& reader) {

@@ -34,7 +34,7 @@ class Table {
 public:
     Table() = default;
     Table(CatalogType, string, string, uint8_t, bool, bool, string, string, uint8_t, uint64_t, uint64_t);
-    void LoadData(const char*);
+    void LoadData();
     static void Deserialize(Reader&, Table*);
     idx_t GetTableStartBlockId();
     idx_t GetTableStartBlockIndex();

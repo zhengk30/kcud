@@ -220,12 +220,13 @@ private:
 
 class LinkedListReader {
 public:
-    LinkedListReader(const char* filepath, idx_t block_id, idx_t block_index) : offset_(POINTER_SIZE) {
-        assert((file_ = ifstream(filepath, ifstream::binary)));
+    LinkedListReader(idx_t block_id, idx_t block_index) : offset_(POINTER_SIZE) {
+        // assert((file_ = ifstream(filepath, ifstream::binary)));
         uint64_t meta_offset = METADATA_BLOCK_SIZE * block_index;
         uint64_t offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * block_id + CHECKSUM_SIZE + meta_offset;
-        file_.seekg(offset, ios::beg);
-        file_.read(reinterpret_cast<char *>(cursor_), METADATA_BLOCK_SIZE);
+        // file_.seekg(offset, ios::beg);
+        // file_.read(reinterpret_cast<char *>(cursor_), METADATA_BLOCK_SIZE);
+        cursor_ = binary_file + offset;
     }
 
     uint64_t GetCurrentOffset() {
@@ -243,7 +244,8 @@ public:
             offset_ += nbytes;
         } else {
             remaining_size = nbytes - remaining_size;
-            memcpy(cursor_, tmp_cursor, METADATA_BLOCK_SIZE);
+            // memcpy(cursor_, tmp_cursor_, METADATA_BLOCK_SIZE);
+            cursor_ = tmp_cursor_;
             offset_ = POINTER_SIZE + remaining_size;
         }
     }
@@ -263,9 +265,10 @@ public:
             uint64_t next_offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * next_block_id + CHECKSUM_SIZE + next_meta_offset;
 
             idx_t tmp_offset = POINTER_SIZE;
-            file_.seekg(next_offset, ios::beg);
-            file_.read(reinterpret_cast<char *>(tmp_cursor), METADATA_BLOCK_SIZE);
-            memcpy(dest + remaining_size, tmp_cursor + tmp_offset, to_read);
+            // file_.seekg(next_offset, ios::beg);
+            // file_.read(reinterpret_cast<char *>(tmp_cursor_), METADATA_BLOCK_SIZE);
+            tmp_cursor_ = binary_file + next_offset;
+            memcpy(dest + remaining_size, tmp_cursor_ + tmp_offset, to_read);
         }
     }
 
@@ -292,8 +295,9 @@ public:
             uint64_t next_meta_offset = METADATA_BLOCK_SIZE * next_block_index;
             uint64_t next_offset = DEFAULT_HEADER_SIZE * 3 + DEFAULT_BLOCK_SIZE * next_block_id + CHECKSUM_SIZE + next_meta_offset;
             offset_ = POINTER_SIZE;
-            file_.seekg(next_offset, ios::beg);
-            file_.read(reinterpret_cast<char *>(cursor_), METADATA_BLOCK_SIZE);
+            // file_.seekg(next_offset, ios::beg);
+            // file_.read(reinterpret_cast<char *>(cursor_), METADATA_BLOCK_SIZE);
+            cursor_ = binary_file + next_offset;
             memcpy(dest_casted + remaining_size, cursor_ + offset_, to_read);
             offset_ += to_read;
         }
@@ -358,10 +362,12 @@ public:
     }
 
 private:
-    ifstream file_;
+    // ifstream file_;
     // Always stores a complete metadata block, the start of which encodes the
     // pointer to the next metadata block
-    byte_t cursor_[METADATA_BLOCK_SIZE];
-    byte_t tmp_cursor[METADATA_BLOCK_SIZE];
+    // byte_t cursor_[METADATA_BLOCK_SIZE];
+    byte_t* cursor_;
+    byte_t* tmp_cursor_;
+    // byte_t tmp_cursor[METADATA_BLOCK_SIZE];
     uint64_t offset_;
 };
