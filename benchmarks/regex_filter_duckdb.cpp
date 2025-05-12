@@ -4,7 +4,7 @@
 #include <iostream>
 
 // NOTE: use full path
-#define INPUT_PATH "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf1.db"
+#define INPUT_PATH "/home/ubuntu/RegDuck/db-files/comment_sf1.db"
 #define QUERY "select count(l_comment) from comment where l_comment like '%regular%'"
 
 using namespace duckdb;
