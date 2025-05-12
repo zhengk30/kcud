@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <filesystem>
 #include <chrono>
+#include <cstring>
 #include <thread>
 #include <future>
 #include <functional>
