@@ -1,6 +1,6 @@
 #include "regduck_api.hpp"
 
-#define DBFILE "/Users/kaiwenzheng/Documents/RegDuck/db-files/tpch_lineitem_comment_sf1.db"
+#define DBFILE "/home/ubuntu/RegDuck/db-files/comment_sf1.db"
 
 int main() {
     char buf[MAX_BATCH_SIZE + 1];
