@@ -2,18 +2,17 @@ project('RegDuck', 'c', 'cpp',
   default_options: ['warning_level=1', 'optimization=0']
 )
 
-# Find re2 dependency
-regex_dep = dependency('re2', required: false)
-if not regex_dep.found()
-  regex_sp = subproject('src/regex/re2_regex')
-  regex_dep = regex_sp.get_variable('regex_dep')
-endif
+# # Find re2 dependency
+# regex_dep = dependency('re2', required: false)
+# if not regex_dep.found()
+#   regex_sp = subproject('src/regex/re2_regex')
+#   regex_dep = regex_sp.get_variable('regex_dep')
+# endif
 
 # Find duckdb dependency
 duckdb_lib = declare_dependency(
   include_directories: include_directories('third-party'),
-  # TODO: use full path for linking
-  link_args: ['-L/Users/kaiwenzheng/Documents/RegDuck/third-party/duckdb', '-lduckdb']
+  link_args: ['-L/home/ubuntu/RegDuck/third-party/duckdb', '-lduckdb']
 )
 
 # Run the right benchmark
@@ -31,7 +30,7 @@ endif
 
 executable('run',
   cpp_args: ['-std=c++17'],
-  dependencies: [regex_dep, duckdb_lib],
+  dependencies: [duckdb_lib],
   sources: ['src/regex/duckdb_regex/regex.cpp',
             'src/parser/include/decoder/decoder.cpp',
             'src/parser/block/metadata_block.cpp',
