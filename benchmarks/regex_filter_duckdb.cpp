@@ -23,12 +23,12 @@ void json_stat(const char* filepath) {
     json data = json::parse(file);
     auto latency = data["latency"];
     auto cpu_time = data["cpu_time"];
-    auto filter_cpu_time = data["children"][0]["cpu_time"];
-    auto scan_cpu_time = data["children"][0]["children"][0]["cpu_time"];
+    auto filter_cpu_time = data["children"][0]["operator_timing"];
+    auto scan_cpu_time = data["children"][0]["children"][0]["operator_timing"];
     std::cout << "execution latency (e2e): " << latency << '\n';
     std::cout << "execution latency (cpu): " << cpu_time << '\n';
-    std::cout << "filter cpu time: " << filter_cpu_time << '\n';
-    std::cout << "scan cpu time: " << scan_cpu_time << '\n';
+    std::cout << "filter operator latency: " << filter_cpu_time << '\n';
+    std::cout << "scan operator latency: " << scan_cpu_time << '\n';
 }
 
 

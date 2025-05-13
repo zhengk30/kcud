@@ -48,13 +48,14 @@ int main() {
 
         Database db(db_file);
         db.LoadExistingDatabase();
-        Table* table = db.GetTable(0);
-
+        
         auto start = chrono::high_resolution_clock::now();
-        db.ScanTable(table);
+        Table* table = db.GetTable(0);
+        table->LoadData();
         auto end = chrono::high_resolution_clock::now();
         chrono::duration<double> elapsed = end - start;
         std::cout << "[SCAN] elapsed: " << elapsed.count() << " sec\n";
+        delete [] binary_file;
 
         vector<thread> re2_threads;
         vector<vector<char *>> partial_results(NTHREADS);
