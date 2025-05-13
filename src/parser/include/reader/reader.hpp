@@ -256,7 +256,8 @@ public:
         if (remaining_size >= read_size) {
             memcpy(dest, cursor_ + offset_, read_size);
         } else {
-            memcpy(dest, cursor_ + offset_, remaining_size);
+            byte_t* dest_casted = reinterpret_cast<byte_t *>(dest);
+            memcpy(dest_casted, cursor_ + offset_, remaining_size);
             uint64_t to_read = read_size - remaining_size;
             idx_t next_metadata_ptr = GetPointerToNextMetaBlock();
             idx_t next_block_id = (next_metadata_ptr & ~((idx_t)(0xff) << 56ull));
@@ -268,7 +269,7 @@ public:
             // file_.seekg(next_offset, ios::beg);
             // file_.read(reinterpret_cast<char *>(tmp_cursor_), METADATA_BLOCK_SIZE);
             tmp_cursor_ = binary_file + next_offset;
-            memcpy(dest + remaining_size, tmp_cursor_ + tmp_offset, to_read);
+            memcpy(dest_casted + remaining_size, tmp_cursor_ + tmp_offset, to_read);
         }
     }
 
@@ -344,10 +345,6 @@ public:
         
         byte_t bytes[16];
         Peek<byte_t>(bytes, 16);
-        // for (int i = 0; i < 16; i++) {
-        //     printf("%02x ", bytes[i]);
-        // }
-        // printf("\n");
         T val;
         size_t size;
         if (is_unsigned<T>::value) {

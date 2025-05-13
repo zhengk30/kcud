@@ -9,11 +9,11 @@ project('RegDuck', 'c', 'cpp',
 #   regex_dep = regex_sp.get_variable('regex_dep')
 # endif
 
-# Find duckdb dependency
-duckdb_lib = declare_dependency(
-  include_directories: include_directories('third-party'),
-  link_args: ['-L/home/ubuntu/RegDuck/third-party/duckdb', '-lduckdb']
-)
+# # Find duckdb dependency
+# duckdb_lib = declare_dependency(
+#   include_directories: include_directories('third-party'),
+#   link_args: ['-L/Users/kaiwenzheng/Documents/RegDuck/third-party/duckdb', '-lduckdb']
+# )
 
 # Run the right benchmark
 which_main = 'src/main.cpp'
@@ -30,7 +30,7 @@ endif
 
 executable('run',
   cpp_args: ['-std=c++17'],
-  dependencies: [duckdb_lib],
+  dependencies: [regex_dep],
   sources: ['src/regex/duckdb_regex/regex.cpp',
             'src/parser/include/decoder/decoder.cpp',
             'src/parser/block/metadata_block.cpp',
