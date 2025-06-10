@@ -1,4 +1,4 @@
-#include "regduck_api.h"
+#include "interface.h"
 #include <iostream>
 int main() {
 //     char buf[MAX_BATCH_SIZE + 1];
