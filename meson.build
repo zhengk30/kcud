@@ -18,7 +18,7 @@ regduck_src = ['src/include/decoder/decoder.cpp',
             'src/header/main_header.cpp',
             'src/header/database_header.cpp',
             'src/database/database.cpp',
-            'src/regduck_api.cpp',
+            'src/interface.cpp',
             'src/main.cpp']
 
 regduck_lib = static_library('run',
