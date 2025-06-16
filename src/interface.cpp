@@ -103,7 +103,6 @@ extern "C" size_t load_strings_in_batch(size_t nbytes, char* buf, uint8_t* lengt
     assert(table);
     // printf("[load_strings_in_batch] size=%u\n", nbytes);
     memset(buf, 0, nbytes);
-    lengths = new uint8_t[STRLEN_ARR_SIZE];
 	size_t n_strs = table->LoadData(DBFILE, nbytes, buf, lengths);
     // printf("n_strs=%lu\n", n_strs);
     // str_count += n_strs;
